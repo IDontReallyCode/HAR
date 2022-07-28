@@ -11,15 +11,10 @@ def main():
     nminute = 5
     ticker = 'TSLA'
     data = td.Get_Ticker_nMinuteSampling(ticker, nminutesampling=nminute)
-    intradaydf = pd.json_normalize(data, record_path=['candles'])
-    intradaydf['nicedatetime'] =  intradaydf['datetime'].map(lambda x: td.unix_convert(x,False))
-    intradaydf['nicedate'] =  intradaydf['datetime'].map(lambda x: td.unix_convert(x,True))
-    
-    print(intradaydf)
+    intradaydf = td.Get_TS_intraday_df(data)
+    intradaydf.rename(columns={'close':'price', 'date_eod':'date'}, inplace=True)
 
     intradaydf.to_csv("./intradaysample.csv")
-
-    done = 1
     
 
 
