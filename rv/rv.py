@@ -4,8 +4,11 @@ import numpy as np
 # import matplotlib.dates
 
 def rv(data:pd.DataFrame):
-    # This function requires a dataframe with two columns ['date'] and ['price']
-    # ['date'] needs to be just a date. No time.
+    """ 
+    This function requires a dataframe with two columns ['date'] and ['price'].
+    The column ['date'] needs to be just a date. No time.
+    returns a tuple( array of dates, array of daily realized variance)
+    """
 
     data['lr2'] = (np.log(data.price) - np.log(data.price.shift(1)))**2
     data = data[data['lr2'].notna()]
