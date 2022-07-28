@@ -13,10 +13,17 @@ def main():
 
     rvdays, realizeddailyvariance = rv.rv(data)
 
-    dates = pltd.date2num(rvdays)
-    plt.plot_date(dates, np.sqrt(realizeddailyvariance*252), 'b-')
-    plt.show()
+    multiplesampling = rv.rvaggregate(realizeddailyvariance)
 
+    dates = pltd.date2num(rvdays)
+    # plt.plot_date(dates, np.sqrt(realizeddailyvariance*252), 'b-')
+    # plt.show()
+
+    plt.plot_date(dates, np.sqrt(multiplesampling[0]*252), 'b-')
+    plt.plot_date(dates, np.sqrt(multiplesampling[1]*252), 'b-')
+    plt.plot_date(dates, np.sqrt(multiplesampling[2]*252), 'b-')
+    plt.plot_date(dates, np.sqrt(multiplesampling[3]*252), 'b-')
+    plt.show()
 
 
 
