@@ -1,3 +1,8 @@
+"""
+Do not use this program.
+Get your own intraday data using your available means.
+This program is offered as an example only
+"""
 from tdalocal import TDA_STUFF as td
 import pandas as pd
 
