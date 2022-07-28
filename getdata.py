@@ -1,13 +1,20 @@
 from tdalocal import TDA_STUFF as td
+import pandas as pd
 
 def main():
     # get n minute data for MSFT
     nminute = 5
-    ticker = 'MSFT'
-    mindata = td.Get_Ticker_nMinuteSampling(ticker, nminutesampling=nminute)
+    ticker = 'TSLA'
+    data = td.Get_Ticker_nMinuteSampling(ticker, nminutesampling=nminute)
+    intradaydf = pd.json_normalize(data, record_path=['candles'])
+    intradaydf['nicedatetime'] =  intradaydf['datetime'].map(lambda x: td.unix_convert(x,False))
+    intradaydf['nicedate'] =  intradaydf['datetime'].map(lambda x: td.unix_convert(x,True))
     
+    print(intradaydf)
 
-    print(mindata)
+    intradaydf.to_csv("./intradaysample.csv")
+
+    done = 1
     
 
 
