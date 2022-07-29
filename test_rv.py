@@ -19,10 +19,10 @@ def main():
     # plt.plot_date(dates, np.sqrt(realizeddailyvariance*252), 'b-')
     # plt.show()
 
-    plt.plot_date(dates, np.sqrt(multiplesampling[0]*252), 'b-', label='daily')
-    plt.plot_date(dates, np.sqrt(multiplesampling[1]*252), 'g-', label='weekly')
-    plt.plot_date(dates, np.sqrt(multiplesampling[2]*252), 'r-', label='bi-weekly')
-    plt.plot_date(dates, np.sqrt(multiplesampling[3]*252), 'k-', label='monthly')
+    plt.plot_date(dates, np.sqrt(multiplesampling[:,0]*252), 'b-', label='daily')
+    plt.plot_date(dates, np.sqrt(multiplesampling[:,1]*252), 'g-', label='weekly')
+    plt.plot_date(dates, np.sqrt(multiplesampling[:,2]*252), 'r-', label='bi-weekly')
+    plt.plot_date(dates, np.sqrt(multiplesampling[:,3]*252), 'k-', label='monthly')
     plt.legend()
     plt.show()
 

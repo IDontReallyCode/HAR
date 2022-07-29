@@ -32,9 +32,9 @@ def rvaggregate(dailyrv: np.ndarray, aggregatesampling: list=[1,5,10,20]):
     convenient function to aggregate the realized variance at various time horizon
     returns one list of numpy vectors. One vector for each time horizon
     """
-    aggregated = [None]*len(aggregatesampling)
+    aggregated = np.zeros((len(dailyrv),len(aggregatesampling)))
     for index, sampling in enumerate(aggregatesampling):
-        aggregated[index] = _running_meanba(dailyrv,sampling)
+        aggregated[:,index] = _running_meanba(dailyrv,sampling)
         # test = _running_meanba(dailyrv,sampling)
         # chek=1
 
@@ -63,8 +63,8 @@ def _running_meanba(x, N):
     # based on https://stackoverflow.com/a/27681394 
     # but avoids using insert and keep the vector length
     # also numba possible now
-    cumsum = np.zeros((len(x)+1,))
-    cumsum[1:] = np.cumsum(x)
-    cumsum[N:] = (cumsum[N:] - cumsum[:-N]) / float(N)
-    cumsum[1:N] = cumsum[1:N] / np.arange(N)[1:N]
-    return cumsum[1:] 
+    cumsum = np.zeros((len(x)+1,1))
+    cumsum[1:,0] = np.cumsum(x)
+    cumsum[N:,0] = (cumsum[N:,0] - cumsum[:-N,0]) / float(N)
+    cumsum[1:N,0] = cumsum[1:N,0] / np.arange(N)[1:N]
+    return cumsum[1:,0] 
