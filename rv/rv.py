@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 # import matplotlib.pyplot as plt
 # import matplotlib.dates
+from numba import njit
 
 def rv(data:pd.DataFrame):
     """ 
@@ -33,15 +34,37 @@ def rvaggregate(dailyrv: np.ndarray, aggregatesampling: list=[1,5,10,20]):
     """
     aggregated = [None]*len(aggregatesampling)
     for index, sampling in enumerate(aggregatesampling):
-        aggregated[index] = _running_mean(dailyrv,sampling)
+        aggregated[index] = _running_meanba(dailyrv,sampling)
+        # test = _running_meanba(dailyrv,sampling)
+        # chek=1
 
     return aggregated
 
-
+# @njit
+# Exception has occurred: TypingError
+# Failed in nopython mode pipeline (step: nopython frontend)
+# [1m[1mUse of unsupported NumPy function 'numpy.insert' or unsupported use of the function.
 def _running_mean(x, N):
     # https://stackoverflow.com/a/27681394 
     # I added my own twist to keep the variables the same length
     cumsum = np.cumsum(np.insert(x, 0, 0))
-    padding = cumsum[1:N] / np.arange(N)[1:N]
+    # cumsum = np.zeros((len(x)+1,))
+    # cumsum = np.cumsum(cumsum)
     movavg = (cumsum[N:] - cumsum[:-N]) / float(N)
+    padding = cumsum[1:N] / np.arange(N)[1:N]
     return np.insert(movavg, 0, padding)
+    # cumsum = (cumsum[N:] - cumsum[:-N]) / float(N)
+    # padding = cumsum[1:N] / np.arange(N)[1:N]
+    # return np.insert(movavg, 0, padding)
+
+
+@njit
+def _running_meanba(x, N):
+    # based on https://stackoverflow.com/a/27681394 
+    # but avoids using insert and keep the vector length
+    # also numba possible now
+    cumsum = np.zeros((len(x)+1,))
+    cumsum[1:] = np.cumsum(x)
+    cumsum[N:] = (cumsum[N:] - cumsum[:-N]) / float(N)
+    cumsum[1:N] = cumsum[1:N] / np.arange(N)[1:N]
+    return cumsum[1:] 
