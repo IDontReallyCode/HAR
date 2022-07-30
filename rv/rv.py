@@ -27,6 +27,7 @@ def rv(data:pd.DataFrame):
 
     return alldays, realizeddailyvariance
 
+
 def rvaggregate(dailyrv: np.ndarray, aggregatesampling: list=[1,5,10,20]):
     """
     convenient function to aggregate the realized variance at various time horizon
@@ -40,6 +41,60 @@ def rvaggregate(dailyrv: np.ndarray, aggregatesampling: list=[1,5,10,20]):
 
     return aggregated
 
+
+@njit
+def _running_meanba(x, N):
+    # based on https://stackoverflow.com/a/27681394 
+    # but avoids using insert and keep the vector length
+    # also numba possible now
+    cumsum = np.zeros((len(x)+1,1))
+    cumsum[1:,0] = np.cumsum(x)
+    cumsum[N:,0] = (cumsum[N:,0] - cumsum[:-N,0]) / float(N)
+    cumsum[1:N,0] = cumsum[1:N,0] / np.arange(N)[1:N]
+    return cumsum[1:,0] 
+
+
+def rq(data:pd.DataFrame):
+    """ 
+    This function requires a dataframe with two columns ['date'] and ['price'].
+    The column ['date'] needs to be just a date. No time.
+    returns a tuple( numpy array of dates (text), numpy array of daily realized quarticity)
+    """
+
+    data['lr4'] = (np.log(data.price) - np.log(data.price.shift(1)))**4
+    data = data[data['lr4'].notna()]
+
+    alldays = data['date'].unique()
+    nbdays = len(alldays)
+    realizeddailyvariance = np.zeros((nbdays,))
+
+    idx=0
+    for day, g in data.groupby('date'):
+        realizeddailyvariance[idx] = sum(g['lr4'])*len(g['lr4'])/3
+        
+        # if np.sqrt(realizeddailyvariance[idx]*252)<0.1:
+        #     print(g['date'].iloc[0])
+        idx+=1
+
+    return alldays, realizeddailyvariance
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
 # @njit
 # Exception has occurred: TypingError
 # Failed in nopython mode pipeline (step: nopython frontend)
@@ -56,15 +111,4 @@ def _running_mean(x, N):
     # cumsum = (cumsum[N:] - cumsum[:-N]) / float(N)
     # padding = cumsum[1:N] / np.arange(N)[1:N]
     # return np.insert(movavg, 0, padding)
-
-
-@njit
-def _running_meanba(x, N):
-    # based on https://stackoverflow.com/a/27681394 
-    # but avoids using insert and keep the vector length
-    # also numba possible now
-    cumsum = np.zeros((len(x)+1,1))
-    cumsum[1:,0] = np.cumsum(x)
-    cumsum[N:,0] = (cumsum[N:,0] - cumsum[:-N,0]) / float(N)
-    cumsum[1:N,0] = cumsum[1:N,0] / np.arange(N)[1:N]
-    return cumsum[1:,0] 
+"""
