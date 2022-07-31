@@ -8,9 +8,18 @@ Will estimate the HAR forecasting model
 
 import numpy as np
 import pandas as pd
-import rv
+from HAR import rv
 
 def estimate(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20]):
+    rvdays, realizeddailyvariance = rv.rv(data)
+
+    multiplesampling = rv.rvaggregate(realizeddailyvariance)
+    X = np.ones((np.size(multiplesampling,0)-1,np.size(multiplesampling,1)+1))
+    X[:,1:] = multiplesampling[0:-1,:]
+    y = multiplesampling[1:,0]
+
+    beta = np.linalg.lstsq(X,y,rcond=None)[0]
+    return beta
 
 
 
