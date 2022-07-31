@@ -8,7 +8,9 @@ Will estimate the HAR forecasting model
 
 import numpy as np
 import pandas as pd
+import rv
 
+def estimate(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20]):
 
 
 
