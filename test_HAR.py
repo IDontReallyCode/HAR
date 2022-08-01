@@ -24,7 +24,8 @@ def main():
 
     # betashere = np.linalg.lstsq(X,y,rcond=None)[0]
 
-    betathere = HAR.estimate(data)
+    betat_OLS = HAR.estimate_ols(data)
+    betatWOLS = HAR.estimate_wols(data)
 
     done=1
 

@@ -8,7 +8,7 @@ def rv(data:pd.DataFrame):
     """ 
     This function requires a dataframe with two columns ['date'] and ['price'].
     The column ['date'] needs to be just a date. No time.
-    returns a tuple( numpy array of dates (text), numpy array of daily realized variance)
+    returns a tuple( numpy array of daily realized variance, numpy array of dates (text))
     """
 
     data['lr2'] = (np.log(data.price) - np.log(data.price.shift(1)))**2
@@ -16,16 +16,16 @@ def rv(data:pd.DataFrame):
 
     alldays = data['date'].unique()
     nbdays = len(alldays)
-    realizeddailyvariance = np.zeros((nbdays,))
+    realizeddailylogrange = np.zeros((nbdays,))
 
     idx=0
     for day, g in data.groupby('date'):
-        realizeddailyvariance[idx] = sum(g['lr2'])
-        # if np.sqrt(realizeddailyvariance[idx]*252)<0.1:
+        realizeddailylogrange[idx] = sum(g['lr2'])
+        # if np.sqrt(realizeddailylogrange[idx]*252)<0.1:
         #     print(g['date'].iloc[0])
         idx+=1
 
-    return realizeddailyvariance, alldays
+    return realizeddailylogrange, alldays
 
 
 def rvaggregate(dailyrv: np.ndarray, aggregatesampling: list=[1,5,10,20]):
@@ -58,7 +58,7 @@ def rq(data:pd.DataFrame):
     """ 
     This function requires a dataframe with two columns ['date'] and ['price'].
     The column ['date'] needs to be just a date. No time.
-    returns a tuple( numpy array of dates (text), numpy array of daily realized quarticity)
+    returns a tuple( numpy array of daily realized quarticity, numpy array of dates (text))
     """
 
     data['lr4'] = (np.log(data.price) - np.log(data.price.shift(1)))**4
@@ -66,18 +66,41 @@ def rq(data:pd.DataFrame):
 
     alldays = data['date'].unique()
     nbdays = len(alldays)
-    realizeddailyvariance = np.zeros((nbdays,))
+    realizeddailylogrange = np.zeros((nbdays,))
 
     idx=0
     for day, g in data.groupby('date'):
-        realizeddailyvariance[idx] = sum(g['lr4'])*len(g['lr4'])/3
+        realizeddailylogrange[idx] = sum(g['lr4'])*len(g['lr4'])/3
         
-        # if np.sqrt(realizeddailyvariance[idx]*252)<0.1:
+        # if np.sqrt(realizeddailylogrange[idx]*252)<0.1:
         #     print(g['date'].iloc[0])
         idx+=1
 
-    return alldays, realizeddailyvariance
+    return realizeddailylogrange, alldays
 
+
+def lr(data:pd.DataFrame):
+    """ 
+    This function requires a dataframe with two columns ['high'] and ['low'].
+    It is expected that the time series be daily, NOT intraday.
+    returns a tuple( numpy array of daily log-range, numpy array of dates (text))
+    """
+
+    data['lr2'] = 1/(4*np.log(2))*(np.log(data.high) - np.log(data.low))**2
+    data = data[data['lr2'].notna()]
+
+    alldays = data['date'].unique()
+    nbdays = len(alldays)
+    realizeddailylogrange = np.array(data['lr2'])
+
+    # idx=0
+    # for day, g in data.groupby('date'):
+    #     realizeddailylogrange[idx] = sum(g['lr2'])
+    #     # if np.sqrt(realizeddailylogrange[idx]*252)<0.1:
+    #     #     print(g['date'].iloc[0])
+    #     idx+=1
+
+    return realizeddailylogrange, alldays
 
 
 

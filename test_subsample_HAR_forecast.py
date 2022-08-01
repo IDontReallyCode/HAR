@@ -33,32 +33,43 @@ def main():
     beta_BM = np.zeros((len(aggregatesampling)+1,))
     beta_BM[1] = 1
 
-    HAR_forecast = np.zeros((testsize,))
+    HAR__OLS_forecast = np.zeros((testsize,))
+    HAR_WOLS_forecast = np.zeros((testsize,))
     BM__forecast = np.zeros((testsize,))
 
     for index in range(testsize):
         # Here we estimate the simple linear model for the HAR
-        betaHAR = HAR.estimate(rvdata[:(cutoffpnt+index-1),:], aggregatesampling)
+        beta__OLS = HAR.estimate_ols(rvdata[:(cutoffpnt+index-1),:], aggregatesampling)
+        beta_WOLS = HAR.estimate_wols(rvdata[:(cutoffpnt+index-1),:], aggregatesampling)
 
-        HAR_forecast[index] = HAR.forecast(rvdata[(cutoffpnt+index-1),:], betaHAR)
+        HAR__OLS_forecast[index] = HAR.forecast(rvdata[(cutoffpnt+index-1),:], beta__OLS)
+        HAR_WOLS_forecast[index] = HAR.forecast(rvdata[(cutoffpnt+index-1),:], beta_WOLS)
         BM__forecast[index] = HAR.forecast(rvdata[(cutoffpnt+index-1),:], beta_BM)
 
     
     # benchmark = np.reshape(benchmark,(testsize,1))
-    # HAR_Rsquared = np.linalg.lstsq(benchmark,HAR_forecast,rcond=None)[1]
+    # HAR_Rsquared = np.linalg.lstsq(benchmark,HAR__OLS_forecast,rcond=None)[1]
     # BM__Rsquared = np.linalg.lstsq(benchmark,BM__forecast,rcond=None)[1]
-    corr_matrix = np.corrcoef(benchmark, HAR_forecast)
+    corr_matrix = np.corrcoef(benchmark, HAR__OLS_forecast)
     corr = corr_matrix[0,1]
-    HAR_R_sq = corr**2
+    HAR_R_sq__OLS = corr**2
+    corr_matrix = np.corrcoef(benchmark, HAR_WOLS_forecast)
+    corr = corr_matrix[0,1]
+    HAR_R_sq_WOLS = corr**2
     corr_matrix = np.corrcoef(benchmark, BM__forecast)
     corr = corr_matrix[0,1]
     BM__R_sq = corr**2
 
-    fig, ax = plt.subplots(1,2)
-    ax[0].plot(benchmark,HAR_forecast,'b.', label=f"HAR R^2={HAR_R_sq:0.4f}")
+    fig, ax = plt.subplots(1,3)
+    ax[0].plot(benchmark,BM__forecast,'r.', label=f"Mart. R^2={BM__R_sq:0.4f}")
     ax[0].legend()
-    ax[1].plot(benchmark,BM__forecast,'r.', label=f"Mart. R^2={BM__R_sq:0.4f}")
+    ax[0].title.set_text('Basic Martingale Forecast')
+    ax[1].plot(benchmark,HAR__OLS_forecast,'b.', label=f"HAR R^2={HAR_R_sq__OLS:0.4f}")
     ax[1].legend()
+    ax[1].title.set_text('HAR using OLS Forecast')
+    ax[2].plot(benchmark,HAR_WOLS_forecast,'b.', label=f"HAR R^2={HAR_R_sq_WOLS:0.4f}")
+    ax[2].legend()
+    ax[2].title.set_text('HAR using WOLS Forecast')
     plt.show()
 
     done=1

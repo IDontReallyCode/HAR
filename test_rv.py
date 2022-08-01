@@ -20,13 +20,34 @@ def main():
     # plt.plot_date(dates, np.sqrt(realizeddailyvariance*252), 'b-')
     # plt.show()
 
-    plt.plot_date(dates, np.sqrt(multiplesampling[:,0]*252), 'b-', label='daily')
-    plt.plot_date(dates, np.sqrt(multiplesampling[:,1]*252), 'g-', label='weekly')
-    plt.plot_date(dates, np.sqrt(multiplesampling[:,2]*252), 'r-', label='bi-weekly')
-    plt.plot_date(dates, np.sqrt(multiplesampling[:,3]*252), 'k-', label='monthly')
-    plt.title(ticker)
+    plt.plot_date(dates, np.sqrt(multiplesampling[:,0]*252), 'b.', label='rv - daily')
+    plt.plot_date(dates, np.sqrt(multiplesampling[:,1]*252), 'g.', label='rv - weekly')
+    plt.plot_date(dates, np.sqrt(multiplesampling[:,2]*252), 'r.', label='rv - bi-weekly')
+    plt.plot_date(dates, np.sqrt(multiplesampling[:,3]*252), 'k.', label='rv - monthly')
+    # plt.title(ticker)
+    plt.legend()
+    # plt.show()
+
+    data = pd.read_csv(f"./dailysample{ticker}.csv", index_col=0)
+    data.rename(columns={'date_eod':'date'}, inplace=True)
+
+    realizeddailylogrange, lrdates = rv.lr(data)
+
+    multiplesampling = rv.rvaggregate(realizeddailylogrange)
+
+    dates = pltd.date2num(lrdates)
+    # plt.plot_date(dates, np.sqrt(realizeddailyvariance*252), 'b-')
+    # plt.show()
+
+    plt.plot_date(dates, np.sqrt(multiplesampling[:,0]*252), 'b-', label='lr - daily')
+    plt.plot_date(dates, np.sqrt(multiplesampling[:,1]*252), 'g-', label='lr - weekly')
+    plt.plot_date(dates, np.sqrt(multiplesampling[:,2]*252), 'r-', label='lr - bi-weekly')
+    plt.plot_date(dates, np.sqrt(multiplesampling[:,3]*252), 'k-', label='lr - monthly')
+    plt.title(f"{ticker}, compare RV and log-range")
     plt.legend()
     plt.show()
+
+
 
 
 

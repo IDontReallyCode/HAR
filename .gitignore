@@ -16,3 +16,6 @@ docs/build_*
 .DS_Store
 config.py
 getdata.py
+SPY.csv
+QQQ.csv
+AAPL.csv
