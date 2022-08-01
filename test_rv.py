@@ -12,7 +12,7 @@ def main():
     # ['date'] needs to be just a date. No time.
     data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
 
-    rvdays, realizeddailyvariance = rv.rv(data)
+    realizeddailyvariance, rvdays = rv.rv(data)
 
     multiplesampling = rv.rvaggregate(realizeddailyvariance)
 

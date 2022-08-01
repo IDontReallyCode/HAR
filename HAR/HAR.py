@@ -15,7 +15,7 @@ def rvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20]):
     """
         This function uses the pandas Dataframe to calculate the Realized Variance and aggregate of multiple time horizon
     """
-    rvdaily = rv.rv(data)[1]
+    rvdaily = rv.rv(data)[0]
     return rv.rvaggregate(rvdaily, aggregatesampling=aggregatesampling)
 
 def estimate(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,10,20])->np.ndarray:
@@ -23,7 +23,7 @@ def estimate(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,
         This function will estimate the HAR beta coefficients on either the raw pandas.Dataframe, or the aggregated Realized Variance
     """
     if type(data)==pd.DataFrame:
-        realizeddailyvariance = rv.rv(data)[1]
+        realizeddailyvariance = rv.rv(data)[0]
         multiplesampling = rv.rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
     else:
         multiplesampling = data

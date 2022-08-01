@@ -22,9 +22,19 @@ With this library, you can:
 - [TODO] use log-range instead of RV
 
 
-REFERENCES
+REFERENCES (I'll sort them later)
 Clements, Adam, and Daniel PA Preve. "A practical guide to harnessing the har volatility model." Journal of Banking & Finance 133 (2021): 106285.
 https://www.sciencedirect.com/science/article/pii/S0378426621002417
+
+
+Corsi, Fulvio. "A simple approximate long-memory model of realized volatility." Journal of Financial Econometrics 7, no. 2 (2009): 174-196.
+https://www.finanzaonline.com/forum/attachments/econometria-e-modelli-di-trading-operativo/1590979d1336906628-forecasting-realized-vol-punto-di-partenza-har-rv-2004-corsi-simple-long-memory-model-realized.pdf
+
+
+Bollerslev, Tim, Andrew J. Patton, and Rogier Quaedvlieg. "Exploiting the errors: A simple approach for improved volatility forecasting." Journal of Econometrics 192, no. 1 (2016): 1-18.
+https://www.sciencedirect.com/science/article/pii/S0304407615002584
+
+
 
 
 

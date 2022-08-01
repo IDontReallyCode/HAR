@@ -25,7 +25,7 @@ def rv(data:pd.DataFrame):
         #     print(g['date'].iloc[0])
         idx+=1
 
-    return alldays, realizeddailyvariance
+    return realizeddailyvariance, alldays
 
 
 def rvaggregate(dailyrv: np.ndarray, aggregatesampling: list=[1,5,10,20]):
