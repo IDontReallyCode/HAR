@@ -5,7 +5,8 @@ import matplotlib.dates as pltd
 import numpy as np
 
 def main():
-    data = pd.read_csv("./intradaysample.csv", index_col=0)
+    ticker = 'VOO'
+    data = pd.read_csv(f"./intradaysample{ticker}.csv", index_col=0)
     
     # the realized variance requires 2 columns with specific names ['date'] and ['price']
     # ['date'] needs to be just a date. No time.
@@ -23,6 +24,7 @@ def main():
     plt.plot_date(dates, np.sqrt(multiplesampling[:,1]*252), 'g-', label='weekly')
     plt.plot_date(dates, np.sqrt(multiplesampling[:,2]*252), 'r-', label='bi-weekly')
     plt.plot_date(dates, np.sqrt(multiplesampling[:,3]*252), 'k-', label='monthly')
+    plt.title(ticker)
     plt.legend()
     plt.show()
 
