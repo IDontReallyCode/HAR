@@ -11,9 +11,9 @@ def main():
 
     # the realized variance requires 2 columns with specific names ['date'] and ['price']
     # ['date'] needs to be just a date. No time.
-    data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
+    # data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
 
-    realizeddailyvariance, rvdays = rv.rv(data)
+    realizeddailyvariance, rvdays = rv.rv(data, datecolumnname='nicedate', closingpricecolumnname='close')
 
     # Cheap trick here to get rid of "off" data that gets binned into weekends
     # rvdays = rvdays[realizeddailyvariance>1e-5]

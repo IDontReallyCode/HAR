@@ -12,7 +12,7 @@ def main():
     # the realized variance requires 2 columns with specific names ['date'] and ['price']
     # ['date'] needs to be just a date. No time.
     data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
-    aggregatesampling = [1,5,10,20]
+    aggregatesampling = [1,5,10,22,63]
 
     # split the sample in train and test samples
     # since the time series dynamics is important, don't split randomly...

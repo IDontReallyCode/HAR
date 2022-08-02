@@ -64,3 +64,11 @@ def forecast(aggregatedrv, beta):
 
     forecast = np.matmul(X,beta)
     return forecast
+
+
+def estimateforecast(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price')->np.ndarray:
+    """
+        Submit a pandas Dataframe with one column with "date" as just the date, and "price" for the closing price of the candle
+    """
+    realizeddailyvariance = rv.rv(data)[0]
+    multiplesampling = rv.rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)

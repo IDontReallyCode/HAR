@@ -4,25 +4,25 @@ import numpy as np
 # import matplotlib.dates
 from numba import njit
 
-def rv(data:pd.DataFrame):
+def rv(data:pd.DataFrame, datecolumnname='date', closingpricecolumnname='price'):
     """ 
     This function requires a dataframe with two columns ['date'] and ['price'].
     The column ['date'] needs to be just a date. No time.
     returns a tuple( numpy array of daily realized variance, numpy array of dates (text))
     """
 
-    data['lr2'] = (np.log(data.price) - np.log(data.price.shift(1)))**2
+    data['lr2'] = (np.log(data[closingpricecolumnname]) - np.log(data[closingpricecolumnname].shift(1)))**2
     data = data[data['lr2'].notna()]
 
-    alldays = data['date'].unique()
+    alldays = data[datecolumnname].unique()
     nbdays = len(alldays)
     realizeddailylogrange = np.zeros((nbdays,))
 
     idx=0
-    for day, g in data.groupby('date'):
+    for day, g in data.groupby(datecolumnname):
         realizeddailylogrange[idx] = sum(g['lr2'])
-        # if np.sqrt(realizeddailylogrange[idx]*252)<0.1:
-        #     print(g['date'].iloc[0])
+        if np.sqrt(realizeddailylogrange[idx]*252)<0.01:
+            print(f"looks like you have an issue with data being classified as weekends. Check the time zones Example, on date: {g[datecolumnname].iloc[0]}")
         idx+=1
 
     return realizeddailylogrange, alldays
