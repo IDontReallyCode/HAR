@@ -11,7 +11,7 @@ def main():
     
     # the realized variance requires 2 columns with specific names ['date'] and ['price']
     # ['date'] needs to be just a date. No time.
-    data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
+    # data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
     aggregatesampling = [1,5,10,22,63]
 
     # split the sample in train and test samples
@@ -22,7 +22,7 @@ def main():
     # We update the betas, we forecast over 1 more day.
     # We loop until the end of the test sample.
 
-    rvdata = HAR.rvdata(data, aggregatesampling=aggregatesampling)
+    rvdata = HAR.rvdata(data, aggregatesampling=aggregatesampling, datecolumnname='nicedate', closingpricecolumnname='close')
     trainsize = 0.75
     cutoffpnt = int(trainsize*np.size(rvdata,0))
     testsize = np.size(rvdata,0)-cutoffpnt

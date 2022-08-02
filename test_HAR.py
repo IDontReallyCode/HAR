@@ -6,11 +6,13 @@ import matplotlib.dates as pltd
 import numpy as np
 
 def main():
-    data = pd.read_csv("./intradaysample.csv", index_col=0)
+    ticker = 'SPY'
+    # data = pd.read_csv(f"./intradaysample{ticker}.csv", index_col=0)
+    data = pd.read_csv(f"./{ticker}_5m.csv", index_col=0)
     
     # the realized variance requires 2 columns with specific names ['date'] and ['price']
     # ['date'] needs to be just a date. No time.
-    data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
+    # data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
 
     # rvdays, realizeddailyvariance = rv.rv(data)
 
@@ -24,8 +26,8 @@ def main():
 
     # betashere = np.linalg.lstsq(X,y,rcond=None)[0]
 
-    betat_OLS = HAR.estimate_ols(data)
-    betatWOLS = HAR.estimate_wols(data)
+    betat_OLS = HAR.estimate_ols(data, datecolumnname='nicedate', closingpricecolumnname='close')
+    betatWOLS = HAR.estimate_wols(data, datecolumnname='nicedate', closingpricecolumnname='close')
 
     done=1
 

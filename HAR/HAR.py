@@ -11,19 +11,20 @@ import numpy as np
 import pandas as pd
 from HAR import rv
 
-def rvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20]):
+def rvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price'):
     """
         This function uses the pandas Dataframe to calculate the Realized Variance and aggregate of multiple time horizon
     """
-    rvdaily = rv.rv(data)[0]
+    rvdaily = rv.rv(data, datecolumnname, closingpricecolumnname)[0]
     return rv.rvaggregate(rvdaily, aggregatesampling=aggregatesampling)
+    
 
-def estimate_ols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,10,20])->np.ndarray:
+def estimate_ols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price')->np.ndarray:
     """
         This function will estimate_ols the HAR beta coefficients on either the raw pandas.Dataframe, or the aggregated Realized Variance
     """
     if type(data)==pd.DataFrame:
-        realizeddailyvariance = rv.rv(data)[0]
+        realizeddailyvariance = rv.rv(data, datecolumnname, closingpricecolumnname)[0]
         multiplesampling = rv.rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
     else:
         multiplesampling = data
@@ -35,7 +36,7 @@ def estimate_ols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[
     return beta
 
 
-def estimate_wols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,10,20])->np.ndarray:
+def estimate_wols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price')->np.ndarray:
     """
         This function will estimate_wols the HAR beta coefficients on either the raw pandas.Dataframe, or the aggregated Realized Variance
         using a simple scheme for weights of 1/RV, see Clement and Preve (2021) https://www.sciencedirect.com/science/article/pii/S0378426621002417
@@ -43,7 +44,7 @@ def estimate_wols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=
     # weighted OLS : https://stackoverflow.com/a/52452833
 
     if type(data)==pd.DataFrame:
-        realizeddailyvariance = rv.rv(data)[0]
+        realizeddailyvariance = rv.rv(data, datecolumnname, closingpricecolumnname)[0]
         multiplesampling = rv.rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
     else:
         multiplesampling = data
@@ -70,5 +71,5 @@ def estimateforecast(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], dat
     """
         Submit a pandas Dataframe with one column with "date" as just the date, and "price" for the closing price of the candle
     """
-    realizeddailyvariance = rv.rv(data)[0]
+    realizeddailyvariance = rv.rv(data, datecolumnname, closingpricecolumnname)[0]
     multiplesampling = rv.rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
