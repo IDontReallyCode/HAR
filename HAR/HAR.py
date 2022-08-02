@@ -11,13 +11,17 @@ import numpy as np
 import pandas as pd
 from HAR import rv
 
+method_ols = 0
+method_wols = 1
+
+
 def rvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price'):
     """
         This function uses the pandas Dataframe to calculate the Realized Variance and aggregate of multiple time horizon
     """
     rvdaily = rv.rv(data, datecolumnname, closingpricecolumnname)[0]
     return rv.rvaggregate(rvdaily, aggregatesampling=aggregatesampling)
-    
+
 
 def estimate_ols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price')->np.ndarray:
     """
@@ -67,9 +71,27 @@ def forecast(aggregatedrv, beta):
     return forecast
 
 
-def estimateforecast(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price')->np.ndarray:
+def estimateforecast(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price', method=method_wols)->dict:
     """
         Submit a pandas Dataframe with one column with "date" as just the date, and "price" for the closing price of the candle
     """
     realizeddailyvariance = rv.rv(data, datecolumnname, closingpricecolumnname)[0]
     multiplesampling = rv.rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
+    if method==method_ols:
+        beta = estimate_ols(multiplesampling, aggregatesampling)
+    elif method==method_wols:
+        beta = estimate_wols(multiplesampling, aggregatesampling)
+    else:
+        bigDIC = {'status':'Failed, invalid estimation method.'}
+        return bigDIC
+
+    HAR_forecast = forecast(multiplesampling[-1,:], beta)
+
+    bigDIC = {'rvaggregate':multiplesampling, 'beta':beta, 'last_annualrvol':np.sqrt(252*realizeddailyvariance[-1]), 'forecast_annualvol':np.sqrt(252*HAR_forecast)}
+
+    return bigDIC
+
+
+
+
+
