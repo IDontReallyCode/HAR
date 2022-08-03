@@ -4,6 +4,43 @@ import numpy as np
 # import matplotlib.dates
 from numba import njit
 
+from scipy import sparse
+
+
+
+
+# @njit
+# this is slow AF
+# def rvnumpy(daydates:np.ndarray, closingprices:np.ndarray)->np.ndarray:
+#     logreturnsquared = (np.log(closingprices[1:])-np.log(closingprices[:-1]))**2
+#     returndates = np.unique(daydates[1:])
+#     # dailyrealizedvariance = np.zeros((len(returndates),))
+#     # for index, thatday in enumerate(returndates):
+#     #     dailyrealizedvariance[index] = np.sum(logreturnsquared[daydates[1:]==thatday)
+#     dailyrealizedvariance = np.array([(np.sum(logreturnsquared[daydates[1:]==thatday])) for thatday in returndates])
+#     return dailyrealizedvariance
+
+
+# This won't work until dates are converted to int
+# def rvscipy(daydates:np.ndarray, closingprices:np.ndarray)->np.ndarray:
+#     logreturnsquared = np.array((np.log(closingprices[1:])-np.log(closingprices[:-1]))**2)
+#     returndates, ids = np.unique(daydates[1:], return_inverse=True)
+
+#     # https://stackoverflow.com/a/49143979
+#     x_sum = logreturnsquared.sum(axis=0)
+#     groups = daydates[1:]
+
+#     c = np.array(sparse.csr_matrix(
+#         (
+#             x_sum,
+#             groups,
+#             np.arange(len(groups)+1)
+#         ),
+#         shape=(len(groups), len(returndates))
+#     ).sum(axis=0)).ravel()
+
+#     return c
+
 def rv(data:pd.DataFrame, datecolumnname='date', closingpricecolumnname='price'):
     """ 
     This function requires a dataframe with two columns ['date'] and ['price'].
