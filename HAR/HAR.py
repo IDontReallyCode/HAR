@@ -9,6 +9,8 @@ Will estimate_ols the HAR forecasting model
 from typing import Union
 import numpy as np
 import pandas as pd
+from numba import njit
+
 
 METHOD_OLS = 0
 METHOD_WOLS = 1
