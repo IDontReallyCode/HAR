@@ -8,12 +8,12 @@ import pandas as pd
 
 def main():
     # get "n" minute data for "ticker"
-    nminute = 5
-    ticker = 'VOO'
+    nminute = 10
+    ticker = 'CLF'
     # ticker = 'TSLA'
     data = td.Get_Ticker_nMinuteSampling(ticker, nminutesampling=nminute)
     intradaydf = td.Get_TS_intraday_df(data)
-    intradaydf.rename(columns={'close':'price', 'date_eod':'date'}, inplace=True)
+    # intradaydf.rename(columns={'date_eod':'date'}, inplace=True)
 
     intradaydf.to_csv(f"./intradaysample{ticker}.csv")
     """

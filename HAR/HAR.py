@@ -9,10 +9,107 @@ Will estimate_ols the HAR forecasting model
 from typing import Union
 import numpy as np
 import pandas as pd
-from HAR import rv
 
-method_ols = 0
-method_wols = 1
+METHOD_OLS = 0
+METHOD_WOLS = 1
+
+def rv(data:pd.DataFrame, datecolumnname='date', closingpricecolumnname='price'):
+    """ 
+    This function requires a dataframe with two columns ['date'] and ['price'].
+    The column ['date'] needs to be just a date. No time.
+    returns a tuple( numpy array of daily realized variance, numpy array of dates (text))
+    """
+
+    data['lr2'] = (np.log(data[closingpricecolumnname]) - np.log(data[closingpricecolumnname].shift(1)))**2
+    data = data[data['lr2'].notna()]
+
+    alldays = data[datecolumnname].unique()
+    nbdays = len(alldays)
+    realizeddailylogrange = np.zeros((nbdays,))
+
+    idx=0
+    for day, g in data.groupby(datecolumnname):
+        realizeddailylogrange[idx] = sum(g['lr2'])
+        if np.sqrt(realizeddailylogrange[idx]*252)<0.01:
+            print(f"looks like you have an issue with data being classified as weekends. Check the time zones Example, on date: {g[datecolumnname].iloc[0]}")
+        idx+=1
+
+    return realizeddailylogrange, alldays
+
+
+def rvaggregate(dailyrv: np.ndarray, aggregatesampling: list=[1,5,10,20]):
+    """
+    convenient function to aggregate the realized variance at various time horizon
+    returns one list of numpy vectors. One vector for each time horizon
+    """
+    aggregated = np.zeros((len(dailyrv),len(aggregatesampling)))
+    for index, sampling in enumerate(aggregatesampling):
+        aggregated[:,index] = _running_meanba(dailyrv,sampling)
+        # test = _running_meanba(dailyrv,sampling)
+        # chek=1
+
+    return aggregated
+
+
+@njit
+def _running_meanba(x, N):
+    # based on https://stackoverflow.com/a/27681394 
+    # but avoids using insert and keep the vector length
+    # also numba possible now
+    cumsum = np.zeros((len(x)+1,1))
+    cumsum[1:,0] = np.cumsum(x)
+    cumsum[N:,0] = (cumsum[N:,0] - cumsum[:-N,0]) / float(N)
+    cumsum[1:N,0] = cumsum[1:N,0] / np.arange(N)[1:N]
+    return cumsum[1:,0] 
+
+
+def rq(data:pd.DataFrame):
+    """ 
+    This function requires a dataframe with two columns ['date'] and ['price'].
+    The column ['date'] needs to be just a date. No time.
+    returns a tuple( numpy array of daily realized quarticity, numpy array of dates (text))
+    """
+
+    data['lr4'] = (np.log(data.price) - np.log(data.price.shift(1)))**4
+    data = data[data['lr4'].notna()]
+
+    alldays = data['date'].unique()
+    nbdays = len(alldays)
+    realizeddailylogrange = np.zeros((nbdays,))
+
+    idx=0
+    for day, g in data.groupby('date'):
+        realizeddailylogrange[idx] = sum(g['lr4'])*len(g['lr4'])/3
+        
+        # if np.sqrt(realizeddailylogrange[idx]*252)<0.1:
+        #     print(g['date'].iloc[0])
+        idx+=1
+
+    return realizeddailylogrange, alldays
+
+
+def lr(data:pd.DataFrame):
+    """ 
+    This function requires a dataframe with two columns ['high'] and ['low'].
+    It is expected that the time series be daily, NOT intraday.
+    returns a tuple( numpy array of daily log-range, numpy array of dates (text))
+    """
+
+    data['lr2'] = 1/(4*np.log(2))*(np.log(data.high) - np.log(data.low))**2
+    data = data[data['lr2'].notna()]
+
+    alldays = data['date'].unique()
+    nbdays = len(alldays)
+    realizeddailylogrange = np.array(data['lr2'])
+
+    # idx=0
+    # for day, g in data.groupby('date'):
+    #     realizeddailylogrange[idx] = sum(g['lr2'])
+    #     # if np.sqrt(realizeddailylogrange[idx]*252)<0.1:
+    #     #     print(g['date'].iloc[0])
+    #     idx+=1
+
+    return realizeddailylogrange, alldays
 
 
 def rvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price'):
@@ -71,15 +168,15 @@ def forecast(aggregatedrv, beta):
     return forecast
 
 
-def estimateforecast(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price', method=method_wols)->dict:
+def estimateforecast(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price', method=METHOD_WOLS)->dict:
     """
         Submit a pandas Dataframe with one column with "date" as just the date, and "price" for the closing price of the candle
     """
     realizeddailyvariance = rv.rv(data, datecolumnname, closingpricecolumnname)[0]
     multiplesampling = rv.rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
-    if method==method_ols:
+    if method==METHOD_OLS:
         beta = estimate_ols(multiplesampling, aggregatesampling)
-    elif method==method_wols:
+    elif method==METHOD_WOLS:
         beta = estimate_wols(multiplesampling, aggregatesampling)
     else:
         bigDIC = {'status':'Failed, invalid estimation method.'}
