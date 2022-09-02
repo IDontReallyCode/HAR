@@ -22,7 +22,7 @@ def main():
     # We update the betas, we forecast over 1 more day.
     # We loop until the end of the test sample.
 
-    rvdata = HAR.rvdata(data, aggregatesampling=aggregatesampling, datecolumnname='nicedate', closingpricecolumnname='close')
+    rvdata = HAR.getrvdata(data, aggregatesampling=aggregatesampling, datecolumnname='nicedate', closingpricecolumnname='close')
     trainsize = 0.75
     cutoffpnt = int(trainsize*np.size(rvdata,0))
     testsize = np.size(rvdata,0)-cutoffpnt
@@ -40,8 +40,8 @@ def main():
 
     for index in range(testsize):
         # Here we estimate the simple linear model for the HAR
-        beta__OLS = HAR.estimate_ols(rvdata[:(cutoffpnt+index-1),:], aggregatesampling)
-        beta_WOLS = HAR.estimate_wols(rvdata[:(cutoffpnt+index-1),:], aggregatesampling)
+        beta__OLS = HAR.estimateHARols(rvdata[:(cutoffpnt+index-1),:], aggregatesampling)
+        beta_WOLS = HAR.estimateHARwols(rvdata[:(cutoffpnt+index-1),:], aggregatesampling)
 
         HAR__OLS_forecast[index] = HAR.forecast(rvdata[(cutoffpnt+index-1),:], beta__OLS)
         HAR_WOLS_forecast[index] = HAR.forecast(rvdata[(cutoffpnt+index-1),:], beta_WOLS)

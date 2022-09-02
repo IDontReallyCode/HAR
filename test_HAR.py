@@ -26,8 +26,8 @@ def main():
 
     # betashere = np.linalg.lstsq(X,y,rcond=None)[0]
 
-    betat_OLS = HAR.estimate_ols(data, datecolumnname='nicedate', closingpricecolumnname='close')
-    betatWOLS = HAR.estimate_wols(data, datecolumnname='nicedate', closingpricecolumnname='close')
+    betat_OLS = HAR.estimateHARols(data, datecolumnname='nicedate', closingpricecolumnname='close', forecasthorizon=5)
+    betatWOLS = HAR.estimateHARwols(data, datecolumnname='nicedate', closingpricecolumnname='close', forecasthorizon=5)
 
     done=1
 

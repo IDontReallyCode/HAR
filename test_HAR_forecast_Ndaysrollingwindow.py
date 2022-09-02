@@ -22,7 +22,7 @@ def main():
     # We update the betas, we forecast over 1 more day.
     # We loop until the end of the test sample.
 
-    rvdata = HAR.rvdata(data, aggregatesampling=aggregatesampling)
+    rvdata = HAR.getrvdata(data, aggregatesampling=aggregatesampling)
     nbdays = np.size(rvdata,0)
     rollingwindowsize = 2000
     benchmark = rvdata[rollingwindowsize:,0]
@@ -39,8 +39,8 @@ def main():
 
     for index in range(nbdays-rollingwindowsize):
         # Here we estimate the simple linear model for the HAR
-        beta__OLS = HAR.estimate_ols(rvdata[0+index:(rollingwindowsize+index-1),:], aggregatesampling)
-        beta_WOLS = HAR.estimate_wols(rvdata[0+index:(rollingwindowsize+index-1),:], aggregatesampling)
+        beta__OLS = HAR.estimateHARols(rvdata[0+index:(rollingwindowsize+index-1),:], aggregatesampling)
+        beta_WOLS = HAR.estimateHARwols(rvdata[0+index:(rollingwindowsize+index-1),:], aggregatesampling)
 
         HAR__OLS_forecast[index] = HAR.forecast(rvdata[(rollingwindowsize+index-1),:], beta__OLS)
         HAR_WOLS_forecast[index] = HAR.forecast(rvdata[(rollingwindowsize+index-1),:], beta_WOLS)

@@ -12,6 +12,8 @@ import pandas as pd
 from numba import njit
 
 
+MODEL_HAR = 0
+MODEL_HARQ = 1
 METHOD_OLS = 0
 METHOD_WOLS = 1
 
@@ -39,7 +41,7 @@ def rv(data:pd.DataFrame, datecolumnname='date', closingpricecolumnname='price')
     return realizeddailylogrange, alldays
 
 
-def rvaggregate(dailyrv: np.ndarray, aggregatesampling: list=[1,5,10,20]):
+def rvaggregate(dailyrv: np.ndarray, aggregatesampling: list=[1,5,20]):
     """
     convenient function to aggregate the realized variance at various time horizon
     returns one list of numpy vectors. One vector for each time horizon
@@ -77,17 +79,14 @@ def rq(data:pd.DataFrame):
 
     alldays = data['date'].unique()
     nbdays = len(alldays)
-    realizeddailylogrange = np.zeros((nbdays,))
+    realizedquarticity = np.zeros((nbdays,))
 
     idx=0
     for day, g in data.groupby('date'):
-        realizeddailylogrange[idx] = sum(g['lr4'])*len(g['lr4'])/3
-        
-        # if np.sqrt(realizeddailylogrange[idx]*252)<0.1:
-        #     print(g['date'].iloc[0])
+        realizedquarticity[idx] = sum(g['lr4'])*len(g['lr4'])/3
         idx+=1
 
-    return realizeddailylogrange, alldays
+    return realizedquarticity, alldays
 
 
 def lr(data:pd.DataFrame):
@@ -114,7 +113,7 @@ def lr(data:pd.DataFrame):
     return realizeddailylogrange, alldays
 
 
-def rvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price'):
+def getrvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price'):
     """
         This function uses the pandas Dataframe to calculate the Realized Variance and aggregate of multiple time horizon
     """
@@ -122,24 +121,27 @@ def rvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnnam
     return rvaggregate(rvdaily, aggregatesampling=aggregatesampling)
 
 
-def estimate_ols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price')->np.ndarray:
+def estimateHARols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling:list[int]=[1,5,20], 
+                    datecolumnname:str='date', closingpricecolumnname:str='price', forecasthorizon:int=1)->np.ndarray:
     """
         This function will estimate_ols the HAR beta coefficients on either the raw pandas.Dataframe, or the aggregated Realized Variance
     """
+    # [TODO] : Allow for different horizon than 1day.
     if type(data)==pd.DataFrame:
-        realizeddailyvariance = rv.rv(data, datecolumnname, closingpricecolumnname)[0]
-        multiplesampling = rv.rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
+        realizeddailyvariance = rv(data, datecolumnname, closingpricecolumnname)[0]
+        multiplesampling = rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
     else:
         multiplesampling = data
-    X = np.ones((np.size(multiplesampling,0)-1,np.size(multiplesampling,1)+1))
-    X[:,1:] = multiplesampling[0:-1,:]
-    y = multiplesampling[1:,0]
+    X = np.ones((np.size(multiplesampling,0)-forecasthorizon,np.size(multiplesampling,1)+1))
+    X[:,1:] = multiplesampling[0:-forecasthorizon,:]
+    y = multiplesampling[forecasthorizon:,0]
 
     beta = np.linalg.lstsq(X,y,rcond=None)[0]
     return beta
 
 
-def estimate_wols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price')->np.ndarray:
+def estimateHARwols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,20], 
+                    datecolumnname='date', closingpricecolumnname='price', forecasthorizon:int=1)->np.ndarray:
     """
         This function will estimate_wols the HAR beta coefficients on either the raw pandas.Dataframe, or the aggregated Realized Variance
         using a simple scheme for weights of 1/RV, see Clement and Preve (2021) https://www.sciencedirect.com/science/article/pii/S0378426621002417
@@ -147,18 +149,17 @@ def estimate_wols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=
     # weighted OLS : https://stackoverflow.com/a/52452833
 
     if type(data)==pd.DataFrame:
-        realizeddailyvariance = rv.rv(data, datecolumnname, closingpricecolumnname)[0]
-        multiplesampling = rv.rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
+        realizeddailyvariance = rv(data, datecolumnname, closingpricecolumnname)[0]
+        multiplesampling = rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
     else:
         multiplesampling = data
-    X = np.ones((np.size(multiplesampling,0)-1,np.size(multiplesampling,1)+1))
-    X[:,1:] = multiplesampling[0:-1,:]
-    y = multiplesampling[1:,0]
-    W = 1/multiplesampling[0:-1,0]
+    X = np.ones((np.size(multiplesampling,0)-forecasthorizon,np.size(multiplesampling,1)+1))
+    X[:,1:] = multiplesampling[0:-forecasthorizon,:]
+    y = multiplesampling[forecasthorizon:,0]
+    W = 1/multiplesampling[0:-forecasthorizon,0]
 
     beta = np.linalg.lstsq(X*W[:,None],y*W,rcond=None)[0]
     return beta
-
 
 
 def forecast(aggregatedrv, beta):
@@ -170,16 +171,16 @@ def forecast(aggregatedrv, beta):
     return forecast
 
 
-def estimateforecast(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price', method=METHOD_WOLS)->dict:
+def estimateforecast(data:pd.DataFrame, aggregatesampling: list=[1,5,20], datecolumnname='date', closingpricecolumnname='price', method=METHOD_WOLS)->dict:
     """
         Submit a pandas Dataframe with one column with "date" as just the date, and "price" for the closing price of the candle
     """
-    realizeddailyvariance = rv.rv(data, datecolumnname, closingpricecolumnname)[0]
-    multiplesampling = rv.rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
+    realizeddailyvariance = rv(data, datecolumnname, closingpricecolumnname)[0]
+    multiplesampling = rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
     if method==METHOD_OLS:
-        beta = estimate_ols(multiplesampling, aggregatesampling)
+        beta = estimateHARols(multiplesampling, aggregatesampling)
     elif method==METHOD_WOLS:
-        beta = estimate_wols(multiplesampling, aggregatesampling)
+        beta = estimateHARwols(multiplesampling, aggregatesampling)
     else:
         bigDIC = {'status':'Failed, invalid estimation method.'}
         return bigDIC
@@ -191,6 +192,43 @@ def estimateforecast(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], dat
     return bigDIC
 
 
+def rollingwindowbacktesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,5,20], 
+                            datecolumnname:str='date', closingpricecolumnname:str='price', method=METHOD_WOLS,
+                            forecasthorizon:list[int]=[1,5,10], rollingwindowsize:int=2000, model=MODEL_HAR)->dict:
+    """
+        This function will deal entirely with back testing HAR forecasts and returns metrics
+        It will also compare to a benchmark of E[RV_{t}] = RV_{t-1}
+
+        Default HAR model is
+        E[RV_{t+n}] = b0 + b1*RV_{t}^{1d} + b2*RV_{t}^{5d} + b3*RV_{t}^{20d}
+    """
+
+    # Get the Realized Variance data
+    rvdatamodel = getrvdata(data, aggregatesampling)
+    rvdatabench = getrvdata(data, forecasthorizon)
+    totalnbdays = np.size(rvdatamodel,0)
+    nbhorizon = len(forecasthorizon)
+    benchmark = rvdatabench[rollingwindowsize:,0]
+
+    # The benchmark forecast E[RV_{t+n}] = RV_{t}^{1d}
+    # i.e. The model is E[RV_{t+n}] = 0 + 1*RV_{t}^{1d} + 0*RV_{t}^{5d} + 0*RV_{t}^{20d}
+    beta_BM = np.zeros((len(aggregatesampling)+1,))
+    beta_BM[1] = 1
+    
+    HAR__OLS_forecast = np.zeros((totalnbdays-rollingwindowsize,nbhorizon))
+    HAR_WOLS_forecast = np.zeros((totalnbdays-rollingwindowsize,nbhorizon))
+    BM_______forecast = np.zeros((totalnbdays-rollingwindowsize,nbhorizon))
+
+    for ihor in forecasthorizon:
+        for index in range(nbdays-rollingwindowsize):
+            # Here we estimate the simple linear model for the HAR
+            beta__OLS = estimateHARols(rvdata[0+index:(rollingwindowsize+index-1),:], aggregatesampling)
+            beta_WOLS = estimateHARwols(rvdata[0+index:(rollingwindowsize+index-1),:], aggregatesampling)
+
+            HAR__OLS_forecast[index] = forecast(rvdata[(rollingwindowsize+index-1),:], beta__OLS)
+            HAR_WOLS_forecast[index] = forecast(rvdata[(rollingwindowsize+index-1),:], beta_WOLS)
+            BM_______forecast[index] = forecast(rvdata[(rollingwindowsize+index-1),:], beta_BM)
 
 
+    pass
 
