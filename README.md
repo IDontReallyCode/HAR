@@ -12,15 +12,16 @@ The input should be a Dataframe of intraday data, with at least two columns
 
 With this library, you can:
 - [x] Calculate the Realized Variance (using the simple definition)
-- [] [TODO] clean data and calculate a "better" Realized Variance
+- [ ] clean data and calculate a "better" Realized Variance
 - [x] Aggregate the Realized Variance over multiple time horizon
-- [] [TODO] Possibility to add external factors to the regression
+- [ ] Possibility to add external factors to the regression
 - [x] Estimate the coefficients for the basic HAR model using OLS or weighted Least-Squares
 - [x] Estimate the coefficients for the HAR model with external factors
 - [x] Use the CNGARCH packages to estimate CNGARCH and add to the forecast model
 - [x] Use Random Forest Regression for the forecast over multiple time horizon
-- [] [TODO] HARQ with bias reduction for quarticity
+- [ ] HARQ with bias reduction for quarticity
 - [x] use log-range instead of RV
+- [ ] A function that deals with back-testing HAR forecast with a rolling-window and compares to Martingal forecast.
 
 
 
