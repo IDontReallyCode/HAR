@@ -118,8 +118,8 @@ def rvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnnam
     """
         This function uses the pandas Dataframe to calculate the Realized Variance and aggregate of multiple time horizon
     """
-    rvdaily = rv.rv(data, datecolumnname, closingpricecolumnname)[0]
-    return rv.rvaggregate(rvdaily, aggregatesampling=aggregatesampling)
+    rvdaily = rv(data, datecolumnname, closingpricecolumnname)[0]
+    return rvaggregate(rvdaily, aggregatesampling=aggregatesampling)
 
 
 def estimate_ols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price')->np.ndarray:

@@ -9,8 +9,14 @@ def main():
     data['fulldate'] = data['fulldate'].dt.tz_localize('UTC').dt.tz_convert("US/Eastern")
     data['nicedate'] = data['fulldate'].dt.date
     data.drop(['total_volume', 'avg_trade_size', 'time_beg', 'vwap', 'opening_price', 'tick_vwap', 'time_end'], axis=1, inplace=True)
-    data1min = data.resample('1min', on='fulldate').last().dropna()
-    data2min = data.resample('2min', on='fulldate').last().dropna()
+    data1min = data.resample('1min', on='fulldate', closed='right').agg({'tick_open': 'first', 
+                                                        'tick_high': 'max', 
+                                                        'tick_low': 'min', 
+                                                        'tick_close': 'last'}).dropna()
+    data2min = data.resample('10min', on='fulldate', closed='right').agg({'tick_open': 'first', 
+                                                        'tick_high': 'max', 
+                                                        'tick_low': 'min', 
+                                                        'tick_close': 'last'}).dropna()
     data5min = data.resample('5min', on='fulldate').last().dropna()
     data5min.rename(columns={'tick_close':'close'}, inplace=True)
 
