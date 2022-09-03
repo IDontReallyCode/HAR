@@ -14,7 +14,7 @@ def main():
     # data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
     aggregatesampling = [1,5,10,22,63]
 
-    HARresults = HAR.estimateforecast(data, aggregatesampling=aggregatesampling, datecolumnname='nicedate', closingpricecolumnname='close')
+    HARresults = HAR.estimateforecast(data, aggregatesampling=aggregatesampling, datecolumnname='nicedate', closingpricecolumnname='close', horizon=10)
 
     done=1
 
