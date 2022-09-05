@@ -58,8 +58,12 @@ def main():
 
     for index in range(nbdays-rollingwindowsize-horizon+1):
         # Here we estimate the simple linear model for the HAR
-        beta__OLS = HAR.estimateHARols(rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype)
-        beta_WOLS = HAR.estimateHARwols(rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype)
+        # beta__OLS1 = HAR.estimateHARols(rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype)
+        # beta_WOLS1 = HAR.estimateHARwols(rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype)
+        beta__OLS2 = HAR.estimatemodel(rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype,
+                                        estimationmethod=HAR.METHOD_OLS, datatransformation=HAR.TRANSFORM_DO_NOTHN)
+        beta_WOLS2 = HAR.estimatemodel(rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype,
+                                        estimationmethod=HAR.METHOD_WOLS, datatransformation=HAR.TRANSFORM_DO_NOTHN)
 
         HAR__OLS_forecast[index] = HAR.forecast(rvdata[(rollingwindowsize+index-1),:], beta__OLS)
         HAR_WOLS_forecast[index] = HAR.forecast(rvdata[(rollingwindowsize+index-1),:], beta_WOLS)

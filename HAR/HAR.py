@@ -145,56 +145,56 @@ def getrvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumn
     return rvaggregate(rvdaily, aggregatesampling=aggregatesampling)
 
 
-def estimateHARols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling:list[int]=[1,5,20], 
-                    datecolumnname:str='date', closingpricecolumnname:str='price', forecasthorizon:int=1, longerhorizontype:int=TOTALREALIZEDVARIANCE)->np.ndarray:
-    """
-        This function will estimate_ols the HAR beta coefficients on either the raw pandas.Dataframe, or the aggregated Realized Variance
-    """
-    # [TODO] : Allow for different horizon than 1day.
-    if type(data)==pd.DataFrame:
-        realizeddailyvariance = rv(data, datecolumnname, closingpricecolumnname)[0]
-        multiplesampling = rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
-    else:
-        multiplesampling = data
-    X = np.ones((np.size(multiplesampling,0)-forecasthorizon,np.size(multiplesampling,1)+1))
-    X[:,1:] = multiplesampling[0:-forecasthorizon,:]
-    if (forecasthorizon>1) and (longerhorizontype==TOTALREALIZEDVARIANCE):
-        y = _running_sumba(multiplesampling[1:,0], forecasthorizon)
-    elif (forecasthorizon>1) and (longerhorizontype==PEAKDREALIZEDVARIANCE):
-        y = _running_maxba(multiplesampling[1:,0], forecasthorizon)
-    else:
-        y = multiplesampling[1:,0]
+# def estimateHARols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling:list[int]=[1,5,20], 
+#                     datecolumnname:str='date', closingpricecolumnname:str='price', forecasthorizon:int=1, longerhorizontype:int=TOTALREALIZEDVARIANCE)->np.ndarray:
+#     """
+#         This function will estimate_ols the HAR beta coefficients on either the raw pandas.Dataframe, or the aggregated Realized Variance
+#     """
+#     # [TODO] : Allow for different horizon than 1day.
+#     if type(data)==pd.DataFrame:
+#         realizeddailyvariance = rv(data, datecolumnname, closingpricecolumnname)[0]
+#         multiplesampling = rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
+#     else:
+#         multiplesampling = data
+#     X = np.ones((np.size(multiplesampling,0)-forecasthorizon,np.size(multiplesampling,1)+1))
+#     X[:,1:] = multiplesampling[0:-forecasthorizon,:]
+#     if (forecasthorizon>1) and (longerhorizontype==TOTALREALIZEDVARIANCE):
+#         y = _running_sumba(multiplesampling[1:,0], forecasthorizon)
+#     elif (forecasthorizon>1) and (longerhorizontype==PEAKDREALIZEDVARIANCE):
+#         y = _running_maxba(multiplesampling[1:,0], forecasthorizon)
+#     else:
+#         y = multiplesampling[1:,0]
 
-    beta = np.linalg.lstsq(X,y,rcond=None)[0]
-    return beta
+#     beta = np.linalg.lstsq(X,y,rcond=None)[0]
+#     return beta
 
 
-def estimateHARwols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,20], 
-                    datecolumnname='date', closingpricecolumnname='price', forecasthorizon:int=1, longerhorizontype:int=TOTALREALIZEDVARIANCE)->np.ndarray:
-    """
-        This function will estimate_wols the HAR beta coefficients on either the raw pandas.Dataframe, or the aggregated Realized Variance
-        using a simple scheme for weights of 1/RV, see Clement and Preve (2021) https://www.sciencedirect.com/science/article/pii/S0378426621002417
-    """
-    # weighted OLS : https://stackoverflow.com/a/52452833
+# def estimateHARwols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: list=[1,5,20], 
+#                     datecolumnname='date', closingpricecolumnname='price', forecasthorizon:int=1, longerhorizontype:int=TOTALREALIZEDVARIANCE)->np.ndarray:
+#     """
+#         This function will estimate_wols the HAR beta coefficients on either the raw pandas.Dataframe, or the aggregated Realized Variance
+#         using a simple scheme for weights of 1/RV, see Clement and Preve (2021) https://www.sciencedirect.com/science/article/pii/S0378426621002417
+#     """
+#     # weighted OLS : https://stackoverflow.com/a/52452833
 
-    if type(data)==pd.DataFrame:
-        realizeddailyvariance = rv(data, datecolumnname, closingpricecolumnname)[0]
-        multiplesampling = rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
-    else:
-        multiplesampling = data
-    X = np.ones((np.size(multiplesampling,0)-forecasthorizon,np.size(multiplesampling,1)+1))
-    X[:,1:] = multiplesampling[0:-forecasthorizon,:]
-    if (forecasthorizon>1) and (longerhorizontype==TOTALREALIZEDVARIANCE):
-        y = _running_sumba(multiplesampling[1:,0], forecasthorizon)
-    elif (forecasthorizon>1) and (longerhorizontype==PEAKDREALIZEDVARIANCE):
-        y = _running_maxba(multiplesampling[1:,0], forecasthorizon)
-    else:
-        y = multiplesampling[1:,0]
+#     if type(data)==pd.DataFrame:
+#         realizeddailyvariance = rv(data, datecolumnname, closingpricecolumnname)[0]
+#         multiplesampling = rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
+#     else:
+#         multiplesampling = data
+#     X = np.ones((np.size(multiplesampling,0)-forecasthorizon,np.size(multiplesampling,1)+1))
+#     X[:,1:] = multiplesampling[0:-forecasthorizon,:]
+#     if (forecasthorizon>1) and (longerhorizontype==TOTALREALIZEDVARIANCE):
+#         y = _running_sumba(multiplesampling[1:,0], forecasthorizon)
+#     elif (forecasthorizon>1) and (longerhorizontype==PEAKDREALIZEDVARIANCE):
+#         y = _running_maxba(multiplesampling[1:,0], forecasthorizon)
+#     else:
+#         y = multiplesampling[1:,0]
 
-    W = 1/multiplesampling[0:-forecasthorizon,0]
+#     W = 1/multiplesampling[0:-forecasthorizon,0]
 
-    beta = np.linalg.lstsq(X*W[:,None],y*W,rcond=None)[0]
-    return beta
+#     beta = np.linalg.lstsq(X*W[:,None],y*W,rcond=None)[0]
+#     return beta
 
 
 def estimatemodel(data:Union[np.ndarray, pd.DataFrame], aggregatesampling:list[int]=[1,5,20], 
@@ -392,3 +392,19 @@ def rollingwindowbacktesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,
                     'realized':{'target':x}}
 
     return output
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
