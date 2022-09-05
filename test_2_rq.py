@@ -1,5 +1,5 @@
 import pandas as pd
-from HAR import rv
+import HAR
 import matplotlib.pyplot as plt
 import matplotlib.dates as pltd
 import numpy as np
@@ -12,20 +12,25 @@ def main():
     # ['date'] needs to be just a date. No time.
     data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
 
-    realizeddailyvariance, rvdays = rv.rq(data)
+    realizeddailyquarticity, rqdays = HAR.rq(data)
 
-    multiplesampling = rv.rvaggregate(realizeddailyvariance)
+    # multiplesampling = HAR.rvaggregate(realizeddailyquarticity)
 
-    dates = pltd.date2num(rvdays)
+    dates = pltd.date2num(rqdays)
     # plt.plot_date(dates, np.sqrt(realizeddailyvariance*252), 'b-')
     # plt.show()
 
-    plt.plot_date(dates, np.sqrt(multiplesampling[:,0]*252), 'b.', label='rq - daily')
-    plt.plot_date(dates, np.sqrt(multiplesampling[:,1]*252), 'g.', label='rq - weekly')
-    plt.plot_date(dates, np.sqrt(multiplesampling[:,2]*252), 'r.', label='rq - bi-weekly')
-    plt.plot_date(dates, np.sqrt(multiplesampling[:,3]*252), 'k.', label='rq - monthly')
-    plt.title("Realized Quarticity")
-    plt.legend()
+    fig, axes = plt.subplots(4,1)
+
+    axes[0].plot_date(dates, realizeddailyquarticity)
+    axes[0].set_title('Quarticity')
+    axes[1].plot_date(dates, np.log(realizeddailyquarticity))
+    axes[0].set_title('log-Quarticity')
+    axes[2].plot_date(dates, np.sqrt(realizeddailyquarticity))
+    axes[0].set_title('sqrt-Quarticity')
+    axes[3].plot_date(dates, np.log(np.sqrt(realizeddailyquarticity)))
+    axes[0].set_title('log-sqrt-Quarticity')
+    fig.tight_layout()
     plt.show()
 
     # data = pd.read_csv(f"./dailysample{ticker}.csv", index_col=0)

@@ -13,12 +13,23 @@ def main():
     # ['date'] needs to be just a date. No time.
     data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
     # aggregatesampling = [1,5,10,20]
-    aggregatesampling = [1,2,5,20]
+    aggregatesampling = [1,2,5,22]
     horizons = [1,5,10,20]
     # target = HAR.PEAKDREALIZEDVARIANCE
-    target = HAR.TOTALREALIZEDVARIANCE
+    # model = HAR.MODEL_HARQ
+    model = HAR.MODEL_HAR
+    datatransform = HAR.TRANSFORM_TAKE_LOG
+    # datatransform = HAR.TRANSFORM_DO_NOTHN
+    estimationmethod = HAR.METHOD_WOLS
+    ndaystoestimate = 2520
+    # target = HAR.TOTALREALIZEDVARIANCE
+    target = HAR.PEAKDREALIZEDVARIANCE
 
-    results = HAR.rollingwindowbacktesting(data, aggregatesampling, 'date', 'price', HAR.METHOD_WOLS, horizons, 1260, HAR.MODEL_HAR, target)
+    results = HAR.rollingwindowbacktesting(data=data, aggregatesampling=aggregatesampling, 
+                            datecolumnname='date', closingpricecolumnname='price', 
+                            rollingwindowsize=ndaystoestimate, 
+                            model=model, datatransformation=datatransform, estimationmethod=estimationmethod, 
+                            forecasthorizon=horizons, longerhorizontype=target)
 
     # fig, ax = plt.subplots(1,3, sharey=True)
     # ax[0].plot(benchmark,BM_______forecast,'r.', label=f"Mart. R^2={BM__R_sq:0.4f}")

@@ -14,6 +14,8 @@ from numba import njit
 
 MODEL_HAR = 0
 MODEL_HARQ = 1
+TRANSFORM_DO_NOTHN = 0
+TRANSFORM_TAKE_LOG = 1
 METHOD_OLS = 0
 METHOD_WOLS = 1
 
@@ -70,7 +72,6 @@ def _running_meanba(x, N):
     return cumsum[1:,0] 
 
 
-
 @njit
 def _running_sumba(x, N):
     # based on https://stackoverflow.com/a/27681394 
@@ -82,31 +83,30 @@ def _running_sumba(x, N):
     return cumsum[N:,0] 
 
 
-
-# @njit
+@njit
 def _running_maxba(x, N):
     peaks = np.zeros(len(x)-N+1,)
-    for index in range(len(x)-N):
+    for index in range(len(x)-N+1):
         peaks[index] = max(x[index:index+N])
     return peaks 
 
 
-def rq(data:pd.DataFrame):
+def rq(data:pd.DataFrame, datecolumnname='date', closingpricecolumnname='price'):
     """ 
     This function requires a dataframe with two columns ['date'] and ['price'].
     The column ['date'] needs to be just a date. No time.
     returns a tuple( numpy array of daily realized quarticity, numpy array of dates (text))
     """
 
-    data['lr4'] = (np.log(data.price) - np.log(data.price.shift(1)))**4
+    data['lr4'] = (np.log(data[closingpricecolumnname]) - np.log(data[closingpricecolumnname].shift(1)))**4
     data = data[data['lr4'].notna()]
 
-    alldays = data['date'].unique()
+    alldays = data[datecolumnname].unique()
     nbdays = len(alldays)
     realizedquarticity = np.zeros((nbdays,))
 
     idx=0
-    for day, g in data.groupby('date'):
+    for day, g in data.groupby(datecolumnname):
         realizedquarticity[idx] = sum(g['lr4'])*len(g['lr4'])/3
         idx+=1
 
@@ -197,6 +197,76 @@ def estimateHARwols(data:Union[np.ndarray, pd.DataFrame], aggregatesampling: lis
     return beta
 
 
+def estimatemodel(data:Union[np.ndarray, pd.DataFrame], aggregatesampling:list[int]=[1,5,20], 
+                    datecolumnname:str='date', closingpricecolumnname:str='price',
+                    model:int=MODEL_HAR, datatransformation:int=TRANSFORM_TAKE_LOG, estimationmethod:int=METHOD_WOLS, 
+                    forecasthorizon:int=1, longerhorizontype:int=TOTALREALIZEDVARIANCE)->np.ndarray:
+    """
+        Either pass the Dataframe, or pass the numpy array of data,
+        where the columns are, e.g., 
+        [rv^{1d}, rv^{5d}, rv^{20d}, rq^{1d}]
+
+        Default HAR model is
+        E[RV_{t+1}] = b0 + b1*RV_{t}^{1d} + b2*RV_{t}^{5d} + b3*RV_{t}^{20d}
+        HOwever, you can change the factors through the "aggregatesampling"
+
+        HARQ model is
+        E[RV_{t+1}] = b0 + b1*RV_{t}^{1d} + b2*RV_{t}^{5d} + b3*RV_{t}^{20d} + b4*SQRT[RQ_{t}^{1d}*RV_{t}^{1d}]
+
+        E[RV_{t+1}] can be replace by E[target] for longer time horizon. 
+        For example: total variance over N days, or peak variance over N days
+    """
+    if type(data)==pd.DataFrame:
+        realizeddailyvariance = rv(data, datecolumnname, closingpricecolumnname)[0]
+        multiplervsampling = rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
+        if model in [MODEL_HARQ]:
+            realizedquarticity = rq(data, datecolumnname, closingpricecolumnname)[0]
+    else:
+        if model in [MODEL_HARQ]:
+            multiplervsampling = data[:,:-1]
+            realizedquarticity = data[:,-1]
+        else:
+            multiplervsampling = data
+
+    # generate the X matrix for the model factors
+    if model in [MODEL_HARQ]:
+        X_in = np.ones((np.size(multiplervsampling,0)-forecasthorizon,np.size(multiplervsampling,1)+2))
+        Xout = np.ones((1,np.size(multiplervsampling,1)+2))
+        X_in[:,1:-1] = multiplervsampling[0:-forecasthorizon,:]
+        Xout[:,1:-1] = multiplervsampling[-1,:]
+        X_in[:,-1] = realizedquarticity[0:-forecasthorizon]*X_in[:,1]
+        Xout[:,-1] = realizedquarticity[-1]*X_in[-1,1]
+    else:
+        X_in = np.ones((np.size(multiplervsampling,0)-forecasthorizon,np.size(multiplervsampling,1)+1))
+        Xout = np.ones((1,np.size(multiplervsampling,1)+1))
+        X_in[:,1:] = multiplervsampling[0:-forecasthorizon,:]
+        Xout[:,1:] = multiplervsampling[-1,:]
+
+    # generate the y vector of the variable to "explain"
+    if (forecasthorizon>1) and (longerhorizontype==TOTALREALIZEDVARIANCE):
+        y = _running_sumba(multiplervsampling[1:,0], forecasthorizon)
+    elif (forecasthorizon>1) and (longerhorizontype==PEAKDREALIZEDVARIANCE):
+        y = _running_maxba(multiplervsampling[1:,0], forecasthorizon)
+    else:
+        y = multiplervsampling[1:,0]
+
+    if datatransformation==TRANSFORM_TAKE_LOG:
+        X_in[:,1:] = np.log(X_in[:,1:])
+        Xout[:,1:] = np.log(Xout[:,1:])
+        y = np.log(y)
+
+    if estimationmethod==METHOD_WOLS:
+        W = 1/multiplervsampling[0:-forecasthorizon,0]
+        beta = np.linalg.lstsq(X_in*W[:,None],y*W,rcond=None)[0]
+    elif estimationmethod==METHOD_OLS:
+        beta = np.linalg.lstsq(X_in,y,rcond=None)[0]
+    else:
+        raise Exception('This is not a valid estimation method for now!!! Please use METHOD_OLS or METHOD_WOLS')
+
+    # pausehere=1
+    return beta, np.matmul(Xout,beta)
+
+
 def forecast(aggregatedrv, beta):
     # TODO we need to track what aggregatesampling was used.
     X = np.ones((1,len(aggregatedrv)+1))
@@ -206,41 +276,56 @@ def forecast(aggregatedrv, beta):
     return forecast
 
 
-def estimateforecast(data:pd.DataFrame, aggregatesampling: list=[1,5,20], datecolumnname='date', closingpricecolumnname='price', method=METHOD_WOLS, horizon:int=1)->dict:
-    """
-        Submit a pandas Dataframe with one column with "date" as just the date, and "price" for the closing price of the candle
-    """
-    realizeddailyvariance = rv(data, datecolumnname, closingpricecolumnname)[0]
-    multiplesampling = rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
-    if method==METHOD_OLS:
-        beta = estimateHARols(multiplesampling, aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname, forecasthorizon=horizon)
-    elif method==METHOD_WOLS:
-        beta = estimateHARwols(multiplesampling, aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname, forecasthorizon=horizon)
-    else:
-        bigDIC = {'status':'Failed, invalid estimation method.'}
-        return bigDIC
+# def estimateforecast(data:pd.DataFrame, aggregatesampling: list=[1,5,20], datecolumnname='date', closingpricecolumnname='price', method=METHOD_WOLS, horizon:int=1)->dict:
+#     """
+#         Submit a pandas Dataframe with one column with "date" as just the date, and "price" for the closing price of the candle
+#     """
+#     realizeddailyvariance = rv(data, datecolumnname, closingpricecolumnname)[0]
+#     multiplesampling = rvaggregate(realizeddailyvariance, aggregatesampling=aggregatesampling)
+#     if method==METHOD_OLS:
+#         beta = estimateHARols(multiplesampling, aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname, forecasthorizon=horizon)
+#     elif method==METHOD_WOLS:
+#         beta = estimateHARwols(multiplesampling, aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname, forecasthorizon=horizon)
+#     else:
+#         bigDIC = {'status':'Failed, invalid estimation method.'}
+#         return bigDIC
 
-    HAR_forecast = forecast(multiplesampling[-horizon,:], beta)
+#     HAR_forecast = forecast(multiplesampling[-horizon,:], beta)
 
-    bigDIC = {'rvaggregate':multiplesampling, 'beta':beta, 'last_annualrvol':np.sqrt(252*realizeddailyvariance[-1]), 'forecast_annualvol':np.sqrt(252*HAR_forecast)}
+#     bigDIC = {'rvaggregate':multiplesampling, 'beta':beta, 'last_annualrvol':np.sqrt(252*realizeddailyvariance[-1]), 'forecast_annualvol':np.sqrt(252*HAR_forecast)}
 
-    return bigDIC
+#     return bigDIC
 
 
 def rollingwindowbacktesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,5,20], 
-                            datecolumnname:str='date', closingpricecolumnname:str='price', method=METHOD_WOLS,
-                            forecasthorizon:list[int]=[1,5,10], rollingwindowsize:int=2000, model=MODEL_HAR,
-                            longerhorizontype:int=TOTALREALIZEDVARIANCE)->dict:
+                            datecolumnname:str='date', closingpricecolumnname:str='price', 
+                            rollingwindowsize:int=2000, 
+                            model:int=MODEL_HAR, datatransformation:int=TRANSFORM_TAKE_LOG, estimationmethod:int=METHOD_WOLS, 
+                            forecasthorizon:int=1, longerhorizontype:int=TOTALREALIZEDVARIANCE)->dict:
     """
         This function will deal entirely with back testing HAR forecasts and returns metrics
         It will also compare to a benchmark of E[RV_{t}] = RV_{t-1}
 
         Default HAR model is
-        E[RV_{t+n}] = b0 + b1*RV_{t}^{1d} + b2*RV_{t}^{5d} + b3*RV_{t}^{20d}
+        E[RV_{t+1}] = b0 + b1*RV_{t}^{1d} + b2*RV_{t}^{5d} + b3*RV_{t}^{20d}
+        HOwever, you can change the factors through the "aggregatesampling"
+
+        HARQ model is
+        E[RV_{t+1}] = b0 + b1*RV_{t}^{1d} + b2*RV_{t}^{5d} + b3*RV_{t}^{20d} + b4*SQRT[RQ_{t}^{1d}*RV_{t}^{1d}]
+
+        E[RV_{t+1}] can be replace by E[target] for longer time horizon. 
+        For example: total variance over N days, or peak variance over N days
     """
 
     # Get the Realized Variance data
-    rvdata = getrvdata(data, aggregatesampling)
+    if model in [MODEL_HARQ]:
+        temp = getrvdata(data, aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname)
+        rvdata = np.zeros((np.size(temp,0), len(aggregatesampling)+1))
+        rvdata[:,:-1] = temp
+        rvdata[:,-1] = rq(data, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname)[0]
+    else:
+        rvdata = getrvdata(data, aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname)
+
     totalnbdays = np.size(rvdata,0)
     nbhorizon = len(forecasthorizon)
 
@@ -258,23 +343,21 @@ def rollingwindowbacktesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,
 
         # The benchmark forecast E[RV_{t+n}] = RV_{t}^{1d}
         # i.e. The model is E[RV_{t+n}] = 0 + 1*RV_{t}^{1d} + 0*RV_{t}^{5d} + 0*RV_{t}^{20d}
-        beta_bench = np.zeros((len(aggregatesampling)+1,))
-        beta_bench[1] = 1
         
         model_forecast = np.zeros((totalnbdays-rollingwindowsize-ihor+1,))
         model_forecast = np.zeros((totalnbdays-rollingwindowsize-ihor+1,))
         bench_forecast = np.zeros((totalnbdays-rollingwindowsize-ihor+1,))
         for index in range(totalnbdays-rollingwindowsize-ihor+1):
             # Here we estimate the simple linear model for the HAR
-            if method==METHOD_OLS:
-                beta_model = estimateHARols(rvdata[0+index:(rollingwindowsize+index-1),:], aggregatesampling, forecasthorizon=ihor, longerhorizontype=longerhorizontype)
-            elif method==METHOD_WOLS:
-                beta_model = estimateHARwols(rvdata[0+index:(rollingwindowsize+index-1),:], aggregatesampling, forecasthorizon=ihor, longerhorizontype=longerhorizontype)
-            else:
-                raise Exception('Please use the CONSTANT METHOD_OLS or METHOD_WOLS.')
+            beta_model, model_forecast[index] = estimatemodel(data=rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling=aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname,
+                                        model=model, datatransformation=datatransformation, estimationmethod=estimationmethod,
+                                        forecasthorizon=ihor, longerhorizontype=longerhorizontype)
+            bench_forecast[index] = rvdata[(rollingwindowsize+index-1),0]
 
-            model_forecast[index] = forecast(rvdata[(rollingwindowsize+index-1),:], beta_model)
-            bench_forecast[index] = forecast(rvdata[(rollingwindowsize+index-1),:], beta_bench)
+        # un-TRANSFORM the potentially tesformed data...
+        if datatransformation==TRANSFORM_TAKE_LOG:
+            model_forecast = np.exp(model_forecast)
+            # bench_forecast = np.exp(bench_forecast)
 
         corr_matrix = np.corrcoef(x, model_forecast)
         corr = corr_matrix[0,1]

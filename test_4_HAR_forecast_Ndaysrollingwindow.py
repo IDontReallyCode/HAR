@@ -14,7 +14,7 @@ def main():
     data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
     # aggregatesampling = [1,5,10,20]
     aggregatesampling = [1,2,3,4,5, 10, 20]
-    horizon = 5
+    horizon = 1
     targettype = HAR.TOTALREALIZEDVARIANCE
     # targettype = HAR.PEAKDREALIZEDVARIANCE
 
@@ -58,13 +58,17 @@ def main():
 
     for index in range(nbdays-rollingwindowsize-horizon+1):
         # Here we estimate the simple linear model for the HAR
-        beta__OLS = HAR.estimateHARols(rvdata[0+index:(rollingwindowsize+index-1),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype)
-        beta_WOLS = HAR.estimateHARwols(rvdata[0+index:(rollingwindowsize+index-1),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype)
+        beta__OLS = HAR.estimateHARols(rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype)
+        beta_WOLS = HAR.estimateHARwols(rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype)
 
         HAR__OLS_forecast[index] = HAR.forecast(rvdata[(rollingwindowsize+index-1),:], beta__OLS)
         HAR_WOLS_forecast[index] = HAR.forecast(rvdata[(rollingwindowsize+index-1),:], beta_WOLS)
         BM_______forecast[index] = HAR.forecast(rvdata[(rollingwindowsize+index-1),:], beta_BM)
 
+        beta_better, better_forecast = HAR.estimatemodel(rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype, 
+                                                    datatransformation=HAR.TRANSFORM_DO_NOTHN, estimationmethod=HAR.METHOD_OLS)
+
+        pausehere=1
     
     # benchmark = np.reshape(benchmark,(testsize,1))
     # HAR_Rsquared = np.linalg.lstsq(benchmark,HAR__OLS_forecast,rcond=None)[1]
