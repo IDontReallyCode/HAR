@@ -26,8 +26,8 @@ def main():
 
     # betashere = np.linalg.lstsq(X,y,rcond=None)[0]
 
-    beta1__OLS = HAR.estimateHARols(data, datecolumnname='nicedate', closingpricecolumnname='close', forecasthorizon=1, longerhorizontype=HAR.PEAKDREALIZEDVARIANCE)
-    beta1_WOLS = HAR.estimateHARwols(data, datecolumnname='nicedate', closingpricecolumnname='close', forecasthorizon=1, longerhorizontype=HAR.PEAKDREALIZEDVARIANCE)
+    # beta1__OLS = HAR.estimateHARols(data, datecolumnname='nicedate', closingpricecolumnname='close', forecasthorizon=1, longerhorizontype=HAR.PEAKDREALIZEDVARIANCE)
+    # beta1_WOLS = HAR.estimateHARwols(data, datecolumnname='nicedate', closingpricecolumnname='close', forecasthorizon=1, longerhorizontype=HAR.PEAKDREALIZEDVARIANCE)
     beta2__OLS, forecast__OLS = HAR.estimatemodel(data, [1,5,20], 'nicedate', 'close', HAR.MODEL_HAR, HAR.TRANSFORM_DO_NOTHN, HAR.METHOD_OLS, 1, HAR.PEAKDREALIZEDVARIANCE)
     beta2_WOLS, forecast_WOLS = HAR.estimatemodel(data, [1,5,20], 'nicedate', 'close', HAR.MODEL_HAR, HAR.TRANSFORM_DO_NOTHN, HAR.METHOD_WOLS, 1, HAR.PEAKDREALIZEDVARIANCE)
     betaQ2_OLS, forecast_QOLS = HAR.estimatemodel(data, [1,5,20], 'nicedate', 'close', HAR.MODEL_HARQ, HAR.TRANSFORM_DO_NOTHN, HAR.METHOD_OLS, 1, HAR.PEAKDREALIZEDVARIANCE)
