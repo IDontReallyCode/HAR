@@ -19,10 +19,11 @@ With this library, you can:
 - [x] Estimate the coefficients for the HAR model with external factors
 - [x] Use the CNGARCH packages to estimate CNGARCH and add to the forecast model
 - [x] Use Random Forest Regression for the forecast over multiple time horizon
-- [ ] HARQ with bias reduction for quarticity (Clements, Adam, & Preve (2021) show that for longer forecast horizon, HARQ does not help)
-- [ ] Allow transformation of the time series before estimating the model (Clements, Adam, & Preve (2021) don't show a significant impact of transformation)
+- [x] HARQ with bias reduction for quarticity (Clements, Adam, & Preve (2021) show that for longer forecast horizon, HARQ does not help)
+- [x] Allow transformation of the time series before estimating the model (Clements, Adam, & Preve (2021) don't show a significant impact of transformation)
 - [x] use log-range instead of RV
-- [ ] A function that deals with back-testing HAR forecast with a rolling-window and compares to Martingal forecast.
+- [x] A function that deals with back-testing HAR forecast with a rolling-window and compares to Martingal forecast.
+- [ ] Add Random Forest Regression instead of simple linear regression
 
 # forecast horizon
 
@@ -52,6 +53,8 @@ https://www.finanzaonline.com/forum/attachments/econometria-e-modelli-di-trading
 
 Bollerslev, Tim, Andrew J. Patton, and Rogier Quaedvlieg. "Exploiting the errors: A simple approach for improved volatility forecasting." Journal of Econometrics 192, no. 1 (2016): 1-18.
 https://www.sciencedirect.com/science/article/pii/S0304407615002584
+
+
 
 
 
