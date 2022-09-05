@@ -12,7 +12,7 @@ The input should be a Dataframe of intraday data, with at least two columns
 
 With this library, you can:
 - [x] Calculate the Realized Variance (using the simple definition)
-- [ ] clean data and calculate a "better" Realized Variance
+- [x] clean data and calculate a "better" Realized Variance
 - [x] Aggregate the Realized Variance over multiple time horizon
 - [ ] Possibility to add external factors to the regression
 - [x] Estimate the coefficients for the basic HAR model using OLS or weighted Least-Squares
