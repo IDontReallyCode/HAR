@@ -13,21 +13,24 @@ def main():
     # ['date'] needs to be just a date. No time.
     data.rename(columns={'nicedate':'date', 'close':'price'}, inplace=True)
     # aggregatesampling = [1,5,10,20]
-    aggregatesampling = [1,2,5,22]
+    aggregatesampling = [1,5,20]
     horizons = [1,5,10,20]
     # target = HAR.PEAKDREALIZEDVARIANCE
     # model = HAR.MODEL_HARQ
-    model = HAR.MODEL_HAR
-    datatransform = HAR.TRANSFORM_TAKE_LOG
-    # datatransform = HAR.TRANSFORM_DO_NOTHN
+    # model = HAR.MODEL_HAR
+    model = HAR.MODEL_HARM
+    # datatransform = HAR.TRANSFORM_TAKE_LOG
+    datatransform = HAR.TRANSFORM_DO_NOTHN
     estimationmethod = HAR.METHOD_WOLS
+    # estimationmethod = HAR.METHOD_RFR
     ndaystoestimate = 2520
-    # target = HAR.TOTALREALIZEDVARIANCE
-    target = HAR.PEAKDREALIZEDVARIANCE
+    mywindowtype = HAR.WINDOW_TYPE_GROWING
+    target = HAR.TOTALREALIZEDVARIANCE
+    # target = HAR.PEAKDREALIZEDVARIANCE
 
-    results = HAR.rollingwindowbacktesting(data=data, aggregatesampling=aggregatesampling, 
+    results = HAR.backtesting(data=data, aggregatesampling=aggregatesampling, 
                             datecolumnname='date', closingpricecolumnname='price', 
-                            rollingwindowsize=ndaystoestimate, 
+                            windowtype=mywindowtype, estimatewindowsize=ndaystoestimate, 
                             model=model, datatransformation=datatransform, estimationmethod=estimationmethod, 
                             forecasthorizon=horizons, longerhorizontype=target)
 
@@ -45,12 +48,15 @@ def main():
     # fig.suptitle(f"Forecasting over {horizon} days")
     # plt.show()
 
+    minT = 0
+    maxT = -1
+
     fig, axes = plt.subplots(2,2)
     # axes[0,0].plot( results[1]['realized']['target'], results[1]['model']['forecast'],'b.', label='HAR_WOLS')
     # axes[0,0].plot( results[1]['realized']['target'], results[1]['bench']['forecast'],'r.', label='Martingale')
-    axes[0,0].plot( np.sqrt(results[1]['realized']['target'][1500:2000]*252), label='REAL')
-    axes[0,0].plot( np.sqrt(results[1]['model']['forecast'][1500:2000]*252), label='HAR_WOLS')
-    axes[0,0].plot( np.sqrt(results[1]['bench']['forecast'][1500:2000]*252), label='bench')
+    axes[0,0].plot( np.sqrt(results[1]['realized']['target'][minT:maxT]*252), label='REAL')
+    axes[0,0].plot( np.sqrt(results[1]['model']['forecast'][minT:maxT]*252), label='HAR_WOLS')
+    axes[0,0].plot( np.sqrt(results[1]['bench']['forecast'][minT:maxT]*252), label='bench')
     # axes[0,0].set_title(f"1-day forecast: HAR R^2={results[1]['model']['AdjRsquare']:0.4f}, Bench R^2={results[1]['bench']['AdjRsquare']:0.4f}")
     axes[0,0].set_title(f"1-day forecast: HAR RMSE={results[1]['model']['RMSE']:0.2E}, Bench RMSE={results[1]['bench']['RMSE']:0.2E}")
     # axes[0,0].set_title(f"1-day forecast:   HAR R^2={results[1]['model']['Rsquare']:0.4f},   HAR RMSE={results[1]['model']['RMSE']:0.4f}\n"+
@@ -58,25 +64,25 @@ def main():
     axes[0,0].legend()
     # axes[0,1].plot( results[5]['realized']['target'], results[5]['model']['forecast'],'b.', label='HAR_WOLS')
     # axes[0,1].plot( results[5]['realized']['target'], results[5]['bench']['forecast'],'r.', label='Martingale')
-    axes[0,1].plot( np.sqrt(results[5]['realized']['target'][1500:2000]*252), label='REAL')
-    axes[0,1].plot( np.sqrt(results[5]['model']['forecast'][1500:2000]*252), label='HAR_WOLS')
-    axes[0,1].plot( np.sqrt(results[5]['bench']['forecast'][1500:2000]*252*5), label='bench')
+    axes[0,1].plot( np.sqrt(results[5]['realized']['target'][minT:maxT]*252), label='REAL')
+    axes[0,1].plot( np.sqrt(results[5]['model']['forecast'][minT:maxT]*252), label='HAR_WOLS')
+    axes[0,1].plot( np.sqrt(results[5]['bench']['forecast'][minT:maxT]*252*5), label='bench')
     # axes[0,1].set_title(f"5-day forecast: HAR R^2={results[5]['model']['AdjRsquare']:0.4f}, Bench R^2={results[5]['bench']['AdjRsquare']:0.4f}")
     axes[0,1].set_title(f"5-day forecast: HAR RMSE={results[5]['model']['RMSE']:0.2E}, Bench RMSE={results[5]['bench']['RMSE']:0.2E}")
     axes[0,1].legend()
     # axes[1,0].plot(results[10]['realized']['target'],results[10]['model']['forecast'],'b.', label='HAR_WOLS')
     # axes[1,0].plot(results[10]['realized']['target'],results[10]['bench']['forecast'],'r.', label='Martingale')
-    axes[1,0].plot( np.sqrt(results[10]['realized']['target'][1500:2000]*252), label='REAL')
-    axes[1,0].plot( np.sqrt(results[10]['model']['forecast'][1500:2000]*252), label='HAR_WOLS')
-    axes[1,0].plot( np.sqrt(results[10]['bench']['forecast'][1500:2000]*252*10), label='bench')
+    axes[1,0].plot( np.sqrt(results[10]['realized']['target'][minT:maxT]*252), label='REAL')
+    axes[1,0].plot( np.sqrt(results[10]['model']['forecast'][minT:maxT]*252), label='HAR_WOLS')
+    axes[1,0].plot( np.sqrt(results[10]['bench']['forecast'][minT:maxT]*252*10), label='bench')
     # axes[1,0].set_title(f"10-day forecast: HAR R^2={results[10]['model']['AdjRsquare']:0.4f}, Bench R^2={results[10]['bench']['AdjRsquare']:0.4f}")
     axes[1,0].set_title(f"10-day forecast: HAR RMSE={results[10]['model']['RMSE']:0.2E}, Bench RMSE={results[10]['bench']['RMSE']:0.2E}")
     axes[1,0].legend()
     # axes[1,1].plot(results[20]['realized']['target'],results[20]['model']['forecast'],'b.', label='HAR_WOLS')
     # axes[1,1].plot(results[20]['realized']['target'],results[20]['bench']['forecast'],'r.', label='Martingale')
-    axes[1,1].plot( np.sqrt(results[20]['realized']['target'][1500:2000]*252), label='REAL')
-    axes[1,1].plot( np.sqrt(results[20]['model']['forecast'][1500:2000]*252), label='HAR_WOLS')
-    axes[1,1].plot( np.sqrt(results[20]['bench']['forecast'][1500:2000]*252*20), label='bench')
+    axes[1,1].plot( np.sqrt(results[20]['realized']['target'][minT:maxT]*252), label='REAL')
+    axes[1,1].plot( np.sqrt(results[20]['model']['forecast'][minT:maxT]*252), label='HAR_WOLS')
+    axes[1,1].plot( np.sqrt(results[20]['bench']['forecast'][minT:maxT]*252*20), label='bench')
     # axes[1,1].set_title(f"20-day forecast: HAR R^2={results[20]['model']['AdjRsquare']:0.4f}, Bench R^2={results[20]['bench']['AdjRsquare']:0.4f}")
     axes[1,1].set_title(f"20-day forecast: HAR RMSE={results[20]['model']['RMSE']:0.2E}, Bench RMSE={results[20]['bench']['RMSE']:0.2E}")
     axes[1,1].legend()

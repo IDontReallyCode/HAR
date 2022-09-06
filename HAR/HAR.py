@@ -11,16 +11,23 @@ import numpy as np
 import pandas as pd
 from numba import njit
 # from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn import metrics
 
 MODEL_HAR = 0
 MODEL_HARQ = 1
+MODEL_HARM = 2
 TRANSFORM_DO_NOTHN = 0
 TRANSFORM_TAKE_LOG = 1
 METHOD_OLS = 0
 METHOD_WOLS = 1
+METHOD_RFR = 2
 
 TOTALREALIZEDVARIANCE = 0
 PEAKDREALIZEDVARIANCE = 1
+
+WINDOW_TYPE_ROLLING = 0
+WINDOW_TYPE_GROWING = 1
 
 def rv(data:pd.DataFrame, datecolumnname='date', closingpricecolumnname='price'):
     """ 
@@ -236,6 +243,13 @@ def estimatemodel(data:Union[np.ndarray, pd.DataFrame], aggregatesampling:list[i
         Xout[:,1:-1] = multiplervsampling[-1,:]
         X_in[:,-1] = realizedquarticity[0:-forecasthorizon]*X_in[:,1]
         Xout[:,-1] = realizedquarticity[-1]*X_in[-1,1]
+    elif model in [MODEL_HARM]:
+        X_in = np.ones((np.size(multiplervsampling,0)-forecasthorizon,np.size(multiplervsampling,1)+2))
+        Xout = np.ones((1,np.size(multiplervsampling,1)+2))
+        X_in[:,1:-1] = multiplervsampling[0:-forecasthorizon,:]
+        Xout[:,1:-1] = multiplervsampling[-1,:]
+        X_in[:,-1] = np.max(multiplervsampling[0:-forecasthorizon,1])
+        Xout[:,-1] = np.max(multiplervsampling[:,1])
     else:
         X_in = np.ones((np.size(multiplervsampling,0)-forecasthorizon,np.size(multiplervsampling,1)+1))
         Xout = np.ones((1,np.size(multiplervsampling,1)+1))
@@ -258,13 +272,24 @@ def estimatemodel(data:Union[np.ndarray, pd.DataFrame], aggregatesampling:list[i
     if estimationmethod==METHOD_WOLS:
         W = 1/multiplervsampling[0:-forecasthorizon,0]
         beta = np.linalg.lstsq(X_in*W[:,None],y*W,rcond=None)[0]
+        return beta, np.matmul(Xout,beta)
     elif estimationmethod==METHOD_OLS:
         beta = np.linalg.lstsq(X_in,y,rcond=None)[0]
+        return beta, np.matmul(Xout,beta)
+    elif estimationmethod==METHOD_RFR:
+        ensemblesize = 1000
+        njobs = 24
+        minsampleleaf = 5
+        ensemble = RandomForestRegressor(n_estimators=ensemblesize, n_jobs=njobs, min_samples_leaf=minsampleleaf)
+        ensemble.fit(X_in, y)
+        predictions = ensemble.predict(Xout)
+        return ensemble.feature_importances_, predictions
+
     else:
         raise Exception('This is not a valid estimation method for now!!! Please use METHOD_OLS or METHOD_WOLS')
 
     # pausehere=1
-    return beta, np.matmul(Xout,beta)
+    # return beta, np.matmul(Xout,beta)
 
 
 def forecast(aggregatedrv, beta):
@@ -297,9 +322,9 @@ def forecast(aggregatedrv, beta):
 #     return bigDIC
 
 
-def rollingwindowbacktesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,5,20], 
+def backtesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,5,20], 
                             datecolumnname:str='date', closingpricecolumnname:str='price', 
-                            rollingwindowsize:int=2000, 
+                            windowtype:int=WINDOW_TYPE_ROLLING , estimatewindowsize:int=2000, 
                             model:int=MODEL_HAR, datatransformation:int=TRANSFORM_TAKE_LOG, estimationmethod:int=METHOD_WOLS, 
                             forecasthorizon:int=1, longerhorizontype:int=TOTALREALIZEDVARIANCE)->dict:
     """
@@ -323,6 +348,11 @@ def rollingwindowbacktesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,
         rvdata = np.zeros((np.size(temp,0), len(aggregatesampling)+1))
         rvdata[:,:-1] = temp
         rvdata[:,-1] = rq(data, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname)[0]
+    elif model in [MODEL_HARM]:
+        temp = getrvdata(data, aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname)
+        rvdata = np.zeros((np.size(temp,0), len(aggregatesampling)+1))
+        rvdata[:,:-1] = temp
+        rvdata[:,-1] = np.max(temp[:,0])
     else:
         rvdata = getrvdata(data, aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname)
 
@@ -335,24 +365,32 @@ def rollingwindowbacktesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,
         # benchmark = rvdata[rollingwindowsize+ihor-1:,0]
 
         if (ihor>1) and (longerhorizontype==TOTALREALIZEDVARIANCE):
-            x = _running_sumba(rvdata[rollingwindowsize:,0], ihor)
+            x = _running_sumba(rvdata[estimatewindowsize:,0], ihor)
         elif (ihor>1) and (longerhorizontype==PEAKDREALIZEDVARIANCE):
-            x = _running_maxba(rvdata[rollingwindowsize:,0], ihor)
+            x = _running_maxba(rvdata[estimatewindowsize:,0], ihor)
         else:
-            x = rvdata[rollingwindowsize:,0]
+            x = rvdata[estimatewindowsize:,0]
 
         # The benchmark forecast E[RV_{t+n}] = RV_{t}^{1d}
         # i.e. The model is E[RV_{t+n}] = 0 + 1*RV_{t}^{1d} + 0*RV_{t}^{5d} + 0*RV_{t}^{20d}
         
-        model_forecast = np.zeros((totalnbdays-rollingwindowsize-ihor+1,))
-        model_forecast = np.zeros((totalnbdays-rollingwindowsize-ihor+1,))
-        bench_forecast = np.zeros((totalnbdays-rollingwindowsize-ihor+1,))
-        for index in range(totalnbdays-rollingwindowsize-ihor+1):
+        model_forecast = np.zeros((totalnbdays-estimatewindowsize-ihor+1,))
+        model_forecast = np.zeros((totalnbdays-estimatewindowsize-ihor+1,))
+        bench_forecast = np.zeros((totalnbdays-estimatewindowsize-ihor+1,))
+        for index in range(totalnbdays-estimatewindowsize-ihor+1):
             # Here we estimate the simple linear model for the HAR
-            beta_model, model_forecast[index] = estimatemodel(data=rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling=aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname,
-                                        model=model, datatransformation=datatransformation, estimationmethod=estimationmethod,
-                                        forecasthorizon=ihor, longerhorizontype=longerhorizontype)
-            bench_forecast[index] = rvdata[(rollingwindowsize+index-1),0]
+            if windowtype==WINDOW_TYPE_ROLLING:
+                beta_model, model_forecast[index] = estimatemodel(data=rvdata[0+index:(estimatewindowsize+index),:], aggregatesampling=aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname,
+                                            model=model, datatransformation=datatransformation, estimationmethod=estimationmethod,
+                                            forecasthorizon=ihor, longerhorizontype=longerhorizontype)
+            elif windowtype==WINDOW_TYPE_GROWING:
+                beta_model, model_forecast[index] = estimatemodel(data=rvdata[:(estimatewindowsize+index),:], aggregatesampling=aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname,
+                                            model=model, datatransformation=datatransformation, estimationmethod=estimationmethod,
+                                            forecasthorizon=ihor, longerhorizontype=longerhorizontype)
+            else:
+                raise Exception('Invalid window type, please use a proper CONSTANT')
+
+            bench_forecast[index] = rvdata[(estimatewindowsize+index-1),0]
 
         # un-TRANSFORM the potentially tesformed data...
         if datatransformation==TRANSFORM_TAKE_LOG:
@@ -407,4 +445,3 @@ def rollingwindowbacktesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,
 
 
 
-    
