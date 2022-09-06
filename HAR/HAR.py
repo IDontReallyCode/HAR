@@ -17,6 +17,7 @@ from sklearn import metrics
 MODEL_HAR = 0
 MODEL_HARQ = 1
 MODEL_HARM = 2
+MODEL_HARMC = 3
 TRANSFORM_DO_NOTHN = 0
 TRANSFORM_TAKE_LOG = 1
 METHOD_OLS = 0
@@ -248,8 +249,15 @@ def estimatemodel(data:Union[np.ndarray, pd.DataFrame], aggregatesampling:list[i
         Xout = np.ones((1,np.size(multiplervsampling,1)+2))
         X_in[:,1:-1] = multiplervsampling[0:-forecasthorizon,:]
         Xout[:,1:-1] = multiplervsampling[-1,:]
-        X_in[:,-1] = np.max(multiplervsampling[0:-forecasthorizon,1])
-        Xout[:,-1] = np.max(multiplervsampling[:,1])
+        X_in[:,-1] = np.max(multiplervsampling[0:-forecasthorizon,0])
+        Xout[:,-1] = np.max(multiplervsampling[:,0])
+    elif model==MODEL_HARMC:
+        X_in = np.ones((np.size(multiplervsampling,0)-forecasthorizon,np.size(multiplervsampling,1)+2))
+        Xout = np.ones((1,np.size(multiplervsampling,1)+2))
+        X_in[:,1:-1] = multiplervsampling[0:-forecasthorizon,:]
+        Xout[:,1:-1] = multiplervsampling[-1,:]
+        X_in[:,-1] = np.max(multiplervsampling[0:-forecasthorizon,0])*(np.size(multiplervsampling,0)-forecasthorizon - np.argmax(multiplervsampling[0:-forecasthorizon,0]))
+        Xout[:,-1] = np.max(multiplervsampling[:,1])*(np.size(multiplervsampling,0) - np.argmax(multiplervsampling[:,0]))
     else:
         X_in = np.ones((np.size(multiplervsampling,0)-forecasthorizon,np.size(multiplervsampling,1)+1))
         Xout = np.ones((1,np.size(multiplervsampling,1)+1))
@@ -353,6 +361,11 @@ def backtesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,5,20],
         rvdata = np.zeros((np.size(temp,0), len(aggregatesampling)+1))
         rvdata[:,:-1] = temp
         rvdata[:,-1] = np.max(temp[:,0])
+    elif model==MODEL_HARMC:
+        temp = getrvdata(data, aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname)
+        rvdata = np.zeros((np.size(temp,0), len(aggregatesampling)+1))
+        rvdata[:,:-1] = temp
+        rvdata[:,-1] = np.max(temp[:,0])*(np.size(temp,0) - np.argmax(temp[:,0]))
     else:
         rvdata = getrvdata(data, aggregatesampling, datecolumnname=datecolumnname, closingpricecolumnname=closingpricecolumnname)
 

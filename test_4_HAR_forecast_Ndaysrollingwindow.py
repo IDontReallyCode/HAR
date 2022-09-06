@@ -65,8 +65,8 @@ def main():
         beta_WOLS2 = HAR.estimatemodel(rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype,
                                         estimationmethod=HAR.METHOD_WOLS, datatransformation=HAR.TRANSFORM_DO_NOTHN)
 
-        HAR__OLS_forecast[index] = HAR.forecast(rvdata[(rollingwindowsize+index-1),:], beta__OLS)
-        HAR_WOLS_forecast[index] = HAR.forecast(rvdata[(rollingwindowsize+index-1),:], beta_WOLS)
+        # HAR__OLS_forecast[index] = HAR.forecast(rvdata[(rollingwindowsize+index-1),:], beta__OLS)
+        # HAR_WOLS_forecast[index] = HAR.forecast(rvdata[(rollingwindowsize+index-1),:], beta_WOLS)
         BM_______forecast[index] = HAR.forecast(rvdata[(rollingwindowsize+index-1),:], beta_BM)
 
         beta_better, better_forecast = HAR.estimatemodel(rvdata[0+index:(rollingwindowsize+index),:], aggregatesampling, forecasthorizon=horizon, longerhorizontype=targettype, 

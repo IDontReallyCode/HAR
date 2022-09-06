@@ -18,12 +18,14 @@ def main():
     # target = HAR.PEAKDREALIZEDVARIANCE
     # model = HAR.MODEL_HARQ
     # model = HAR.MODEL_HAR
-    model = HAR.MODEL_HARM
+    # model = HAR.MODEL_HARM
+    model = HAR.MODEL_HARMC
     # datatransform = HAR.TRANSFORM_TAKE_LOG
     datatransform = HAR.TRANSFORM_DO_NOTHN
     estimationmethod = HAR.METHOD_WOLS
     # estimationmethod = HAR.METHOD_RFR
     ndaystoestimate = 2520
+    # mywindowtype = HAR.WINDOW_TYPE_ROLLING
     mywindowtype = HAR.WINDOW_TYPE_GROWING
     target = HAR.TOTALREALIZEDVARIANCE
     # target = HAR.PEAKDREALIZEDVARIANCE
