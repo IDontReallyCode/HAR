@@ -421,8 +421,8 @@ def backtesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,5,20],
         bench_mae = metrics.mean_absolute_error(x, bench_forecast)
         bench_mape = metrics.mean_absolute_percentage_error(x, bench_forecast)
 
-        output[ihor] = {'model':{'Rsquare':model_Rsquare, 'RMSE':model_RMSE, 'explainedvariancescore':model_evs, 'forecast':model_forecast, 'mae':model_mae, 'mape':model_mape},
-                    'bench':{'Rsquare':bench_Rsquare, 'RMSE':bench_RMSE, 'explainedvariancescore':bench_evs, 'forecast':bench_forecast, 'mae':bench_mae, 'mape':bench_mape},
+        output[ihor] = {'model':{'Rsquare':model_Rsquare, 'RMSE':model_RMSE, 'evs':model_evs, 'forecast':model_forecast, 'mae':model_mae, 'mape':model_mape},
+                    'bench':{'Rsquare':bench_Rsquare, 'RMSE':bench_RMSE, 'evs':bench_evs, 'forecast':bench_forecast, 'mae':bench_mae, 'mape':bench_mape},
                     'realized':{'target':x}}
 
     return output
