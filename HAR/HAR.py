@@ -332,9 +332,9 @@ def forecast(aggregatedrv, beta):
 
 def backtesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,5,20], 
                             datecolumnname:str='date', closingpricecolumnname:str='price', 
-                            windowtype:int=WINDOW_TYPE_ROLLING , estimatewindowsize:int=2000, 
+                            windowtype:int=WINDOW_TYPE_ROLLING, estimatewindowsize:int=2000, 
                             model:int=MODEL_HAR, datatransformation:int=TRANSFORM_TAKE_LOG, estimationmethod:int=METHOD_WOLS, 
-                            forecasthorizon:int=1, longerhorizontype:int=TOTALREALIZEDVARIANCE)->dict:
+                            forecasthorizon:Union[int, np.ndarray]=1, longerhorizontype:int=TOTALREALIZEDVARIANCE)->dict:
     """
         This function will deal entirely with back testing HAR forecasts and returns metrics
         It will also compare to a benchmark of E[RV_{t}] = RV_{t-1}
@@ -388,7 +388,6 @@ def backtesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,5,20],
         # i.e. The model is E[RV_{t+n}] = 0 + 1*RV_{t}^{1d} + 0*RV_{t}^{5d} + 0*RV_{t}^{20d}
         
         model_forecast = np.zeros((totalnbdays-estimatewindowsize-ihor+1,))
-        model_forecast = np.zeros((totalnbdays-estimatewindowsize-ihor+1,))
         bench_forecast = np.zeros((totalnbdays-estimatewindowsize-ihor+1,))
         for index in range(totalnbdays-estimatewindowsize-ihor+1):
             # Here we estimate the simple linear model for the HAR
@@ -410,36 +409,20 @@ def backtesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,5,20],
             model_forecast = np.exp(model_forecast)
             # bench_forecast = np.exp(bench_forecast)
 
-        corr_matrix = np.corrcoef(x, model_forecast)
-        corr = corr_matrix[0,1]
-        model_Rsquare = corr**2
-        corr_matrix = np.corrcoef(x, bench_forecast)
-        corr = corr_matrix[0,1]
-        bench_Rsquare = corr**2
+        model_Rsquare = metrics.r2_score(x, model_forecast)
+        model_RMSE = np.sqrt(metrics.mean_squared_error(x, model_forecast))
+        model_evs = metrics.explained_variance_score(x, model_forecast)
+        model_mae = metrics.mean_absolute_error(x, model_forecast)
+        model_mape = metrics.mean_absolute_percentage_error(x, model_forecast)
 
-        beta = np.linalg.lstsq(np.reshape(x,(-1,1)),model_forecast,rcond=None)[0]
-        yhat = np.matmul(np.reshape(x,(-1,1)),beta)
-        SS_Residual = sum((model_forecast-yhat)**2)       
-        SS_Total = sum((model_forecast-np.mean(model_forecast))**2)     
-        r_squared = 1 - (float(SS_Residual))/SS_Total
-        model_ad_r_squared = 1 - (1-r_squared)*(len(x)-1)/(len(x)-len(aggregatesampling)-1)
+        bench_Rsquare = metrics.r2_score(x, bench_forecast)
+        bench_RMSE = np.sqrt(metrics.mean_squared_error(x, bench_forecast))
+        bench_evs = metrics.explained_variance_score(x, bench_forecast)
+        bench_mae = metrics.mean_absolute_error(x, bench_forecast)
+        bench_mape = metrics.mean_absolute_percentage_error(x, bench_forecast)
 
-        beta = np.linalg.lstsq(np.reshape(x,(-1,1)),bench_forecast,rcond=None)[0]
-        yhat = np.matmul(np.reshape(x,(-1,1)),beta)
-        SS_Residual = sum((bench_forecast-yhat)**2)       
-        SS_Total = sum((bench_forecast-np.mean(bench_forecast))**2)     
-        bench_ad_r_squared = 1 - (float(SS_Residual))/SS_Total
-        # bench_ad_r_squared = 1 - (1-r_squared)*(len(x)-1)/(len(x)-len(aggregatesampling)-1)
-
-
-        model_RMSE = np.sqrt(np.mean((x-model_forecast)**2))
-        bench_RMSE = np.sqrt(np.mean((x-bench_forecast)**2))
-
-        model_AME = np.mean(np.abs(x-model_forecast))
-        bench_AME = np.mean(np.abs(x-bench_forecast))
-
-        output[ihor] = {'model':{'Rsquare':model_Rsquare, 'RMSE':model_RMSE, 'AME':model_AME, 'forecast':model_forecast, 'AdjRsquare':model_ad_r_squared},
-                    'bench':{'Rsquare':bench_Rsquare, 'RMSE':bench_RMSE, 'AME':bench_AME, 'forecast':bench_forecast, 'AdjRsquare':bench_ad_r_squared},
+        output[ihor] = {'model':{'Rsquare':model_Rsquare, 'RMSE':model_RMSE, 'explainedvariancescore':model_evs, 'forecast':model_forecast, 'mae':model_mae, 'mape':model_mape},
+                    'bench':{'Rsquare':bench_Rsquare, 'RMSE':bench_RMSE, 'explainedvariancescore':bench_evs, 'forecast':bench_forecast, 'mae':bench_mae, 'mape':bench_mape},
                     'realized':{'target':x}}
 
     return output
