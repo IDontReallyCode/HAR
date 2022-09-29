@@ -44,14 +44,17 @@ def rv(data:pd.DataFrame, datecolumnname='date', closingpricecolumnname='price')
     nbdays = len(alldays)
     realizeddailylogrange = np.zeros((nbdays,))
 
+    allgood = True
+
     idx=0
     for day, g in data.groupby(datecolumnname):
         realizeddailylogrange[idx] = sum(g['lr2'])
         if np.sqrt(realizeddailylogrange[idx]*252)<0.01:
             print(f"looks like you have an issue with data being classified as weekends. Check the time zones Example, on date: {g[datecolumnname].iloc[0]}")
+            allgood = False
         idx+=1
 
-    return realizeddailylogrange, alldays
+    return realizeddailylogrange, alldays, allgood
 
 
 def rvaggregate(dailyrv: np.ndarray, aggregatesampling: list=[1,5,20]):
@@ -207,7 +210,7 @@ def getrvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumn
 
 def estimatemodel(data:Union[np.ndarray, pd.DataFrame], aggregatesampling:list[int]=[1,5,20], 
                     datecolumnname:str='date', closingpricecolumnname:str='price',
-                    model:int=MODEL_HAR, datatransformation:int=TRANSFORM_TAKE_LOG, estimationmethod:int=METHOD_WOLS, 
+                    model:int=MODEL_HAR, datatransformation:int=TRANSFORM_DO_NOTHN, estimationmethod:int=METHOD_WOLS, 
                     forecasthorizon:int=1, longerhorizontype:int=TOTALREALIZEDVARIANCE)->np.ndarray:
     """
         Either pass the Dataframe, or pass the numpy array of data,
