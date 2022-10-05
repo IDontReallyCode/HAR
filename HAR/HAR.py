@@ -283,10 +283,10 @@ def estimatemodel(data:Union[np.ndarray, pd.DataFrame], aggregatesampling:list[i
     if estimationmethod==METHOD_WOLS:
         W = 1/multiplervsampling[0:-forecasthorizon,0]
         beta = np.linalg.lstsq(X_in*W[:,None],y*W,rcond=None)[0]
-        return beta, np.matmul(Xout,beta)
+        return beta, np.matmul(Xout,beta), np.matmul(X_in,beta)
     elif estimationmethod==METHOD_OLS:
         beta = np.linalg.lstsq(X_in,y,rcond=None)[0]
-        return beta, np.matmul(Xout,beta)
+        return beta, np.matmul(Xout,beta), np.matmul(X_in,beta)
     elif estimationmethod==METHOD_RFR:
         ensemblesize = 1000
         njobs = 24
