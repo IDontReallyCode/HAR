@@ -50,7 +50,11 @@ def rv(data:pd.DataFrame, datecolumnname='date', closingpricecolumnname='price')
     for day, g in data.groupby(datecolumnname):
         realizeddailylogrange[idx] = sum(g['lr2'])
         if np.sqrt(realizeddailylogrange[idx]*252)<0.01:
-            print(f"looks like you have an issue with data being classified as weekends. Check the time zones Example, on date: {g[datecolumnname].iloc[0]}")
+            print(f"There is an issue with data. Could be a lack of trading and zero returns, or you did not account for time zones properly. Problem date: {g[datecolumnname].iloc[0]}")
+            if idx==0:
+                realizeddailylogrange[idx] = (0.2*0.2)/252
+            else:
+                realizeddailylogrange[idx] = realizeddailylogrange[idx-1]
             allgood = False
         idx+=1
 
