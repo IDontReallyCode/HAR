@@ -152,7 +152,7 @@ def lr(data:pd.DataFrame):
     return realizeddailylogrange, alldays
 
 
-def getrvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumnname='date', closingpricecolumnname='price'):
+def getrvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,20], datecolumnname='date', closingpricecolumnname='price'):
     """
         This function uses the pandas Dataframe to calculate the Realized Variance and aggregate of multiple time horizon
     """
@@ -214,7 +214,7 @@ def getrvdata(data:pd.DataFrame, aggregatesampling: list=[1,5,10,20], datecolumn
 
 def estimatemodel(data:Union[np.ndarray, pd.DataFrame], aggregatesampling:list[int]=[1,5,20], 
                     datecolumnname:str='date', closingpricecolumnname:str='price',
-                    model:int=MODEL_HAR, datatransformation:int=TRANSFORM_DO_NOTHN, estimationmethod:int=METHOD_WOLS, 
+                    model:int=MODEL_HAR, datatransformation:int=TRANSFORM_DO_NOTHN, estimationmethod:int=METHOD_OLS, 
                     forecasthorizon:int=1, longerhorizontype:int=TOTALREALIZEDVARIANCE)->np.ndarray:
     """
         Either pass the Dataframe, or pass the numpy array of data,
@@ -340,7 +340,7 @@ def forecast(aggregatedrv, beta):
 def backtesting(data:pd.DataFrame, aggregatesampling: list[int]=[1,5,20], 
                             datecolumnname:str='date', closingpricecolumnname:str='price', 
                             windowtype:int=WINDOW_TYPE_ROLLING, estimatewindowsize:int=2000, 
-                            model:int=MODEL_HAR, datatransformation:int=TRANSFORM_TAKE_LOG, estimationmethod:int=METHOD_WOLS, 
+                            model:int=MODEL_HAR, datatransformation:int=TRANSFORM_DO_NOTHN, estimationmethod:int=METHOD_OLS, 
                             forecasthorizon:Union[int, np.ndarray]=1, longerhorizontype:int=TOTALREALIZEDVARIANCE)->dict:
     """
         This function will deal entirely with back testing HAR forecasts and returns metrics
