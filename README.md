@@ -1,10 +1,10 @@
 # HAR
 
 ## NOTE
-- [] I found a better way to calculate RV for pandas DataFrames. I will update the code.
-- [] I should better document or at least provide an example for using this without DataFrames and sticking with numpy arrays.
-- [] I would like to include cupy arrays as well
-- [] The current code allows using external factors. I will provide an example of that.
+- [ ] I found a better way to calculate RV for pandas DataFrames. I will update the code.
+- [ ] I should better document or at least provide an example for using this without DataFrames and sticking with numpy arrays.
+- [ ] I would like to include cupy arrays as well
+- [ ] The current code allows using external factors. I will provide an example of that.
   
 
 ## Description
