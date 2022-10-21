@@ -1,5 +1,8 @@
 import pandas as pd
 import datetime
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.dates as pltd
 
 def main():
     ticker = 'SPY'
@@ -13,13 +16,32 @@ def main():
                                                         'tick_high': 'max', 
                                                         'tick_low': 'min', 
                                                         'tick_close': 'last'}).dropna()
-    data2min = data.resample('10min', on='fulldate', closed='right').agg({'tick_open': 'first', 
+    data1min['lr2at1min'] = (np.log(data1min['tick_close']) - np.log(data1min['tick_close'].shift(1)))**2
+    data1min = data1min[data1min['lr2at1min'].notna()]
+
+    data5min = data1min.resample('5min').agg({'tick_open': 'first', 
                                                         'tick_high': 'max', 
                                                         'tick_low': 'min', 
-                                                        'tick_close': 'last'}).dropna()
-    data5min = data.resample('5min', on='fulldate').last().dropna()
-    data5min.rename(columns={'tick_close':'close'}, inplace=True)
+                                                        'tick_close': 'last',
+                                                        'lr2at1min':'sum'}).dropna()
+    data5min['lr2at5min'] = (np.log(data5min['tick_close']) - np.log(data5min['tick_close'].shift(1)))**2
+    dates = pltd.date2num(data5min.index)
+    plt.plot_date(dates, np.sqrt(data5min['lr2at1min']*252*84), 'r-')
+    # plt.show()
 
+    data1day = data5min.resample('1d').agg({'tick_open': 'first', 
+                                                        'tick_high': 'max', 
+                                                        'tick_low': 'min', 
+                                                        'tick_close': 'last',
+                                                        'lr2at5min':'sum'}).dropna()
+    dates = pltd.date2num(data1day.index)
+    plt.plot_date(dates, np.sqrt(data1day['lr2at5min']*252), 'b-')
+    plt.show()
+    # data5min.rename(columns={'tick_close':'close'}, inplace=True)
+
+    # data1min['dateevery5'] = data1min.index
+    # data1min['remainder'] = (data1min['dateevery5'].dt.minute % 5)
+    # data1min['dateevery5'] = data1min['dateevery5'].apply(pd.Timedelta(minutes = pd.to_numeric(data1min['remainder'])))
     # data5min.to_csv(f"{ticker}_5m.csv")
     done=1
 
